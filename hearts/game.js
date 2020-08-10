@@ -121,6 +121,12 @@ function Game() {
   this.playerTurn = 0
   this.activeTrick = new Trick()
   this.numPlayers = 4
+  this.output = null
+  this.log = function(msg) {
+    if(output != null) {
+      output(msg)
+    }
+  }
   this.tricksPerRound = this.deck.size() / this.numPlayers
   this.nextPlayerTurn = function() {
     this.playerTurn += 1
@@ -129,6 +135,11 @@ function Game() {
   this.currentRound = function() {
     return this.rounds[this.rounds.length - 1]
   }
+
+  this.currentTurn = function() {
+    output("It is player " + this.playerTurn + "'s turn.")
+  }
+
   this.deal = function() {
     this.deck.deal(this.players)
   }
@@ -137,8 +148,12 @@ function Game() {
     this.deck = new Deck()
     this.deal()
   }
+  this.registerOutput = function(callback) {
+    output = callback
+  }
+
   this.playCard = function(card) {
-    console.log(this.playerTurn + " plays " + card)
+    output(this.playerTurn + " plays " + card)
 
     this.activeTrick.makePlay(this.playerTurn, card)
 
@@ -147,7 +162,7 @@ function Game() {
     if(this.activeTrick.completed()) {
       var round = this.currentRound()
       round.addTrick(this.activeTrick)
-      console.log("Completed trick " + round.size() + "/" + this.tricksPerRound)
+      output("Completed trick " + round.size() + "/" + this.tricksPerRound)
 
       this.activeTrick = new Trick()
 
@@ -157,12 +172,13 @@ function Game() {
           this.score[i] += round.playerPoints[i]
         }
         this.newRound()
-        console.log("End of round. Points stand thusly:")
+        output("End of round. Points stand thusly:")
         for(var i = 0; i < this.numPlayers; i++) {
-          console.log("Player " + i + ": " + this.score[i])
+          output("Player " + i + ": " + this.score[i])
         }
       }
     }
+    this.currentTurn()
 
   }
 
