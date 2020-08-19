@@ -5,6 +5,8 @@ var app = express()
 var http = require('http').createServer(app)
 var port = 5000
 var io = require('socket.io')(http)
+var mobile = require('is-mobile')
+
 app.use(bp.json())
 app.set('view engine', 'ejs')
 app.use("/src", express.static(path.join(__dirname, 'src')))
@@ -16,8 +18,6 @@ var activeGame = null
 function sendLogMsg(msg) {
   io.emit('game-message', msg);
 }
-
-
 
 function playCard(card) {
   var card = new game.Card(card)
@@ -34,15 +34,15 @@ function newGame() {
 
 io.on('connection', function(socket) {
   socket.on('player-connect', (id) => {
-    if(players.length < 4) {
-      players.push(id)
-      console.log("Player " + players.length + " connected: " + id)
-      socket.emit('game-message', "Welcome to the game.")
-      if(players.length == 1) {
-        socket.emit('game-message', "The game begins.")
-        newGame()
-      }
-    }
+    // if(players.length < 4) {
+    //   players.push(id)
+    //   console.log("Player " + players.length + " connected: " + id)
+    //   socket.emit('game-message', "Welcome to the game.")
+    //   if(players.length == 1) {
+    //     socket.emit('game-message', "The game begins.")
+    //     newGame()
+    //   }
+    // }
   })
 
   socket.on('play-card', (card) => {
@@ -52,12 +52,13 @@ io.on('connection', function(socket) {
   })
 })
 
-
-
 //--ROUTES--//
 app.get("/", function(req, res) {
-  res.send("Hey")
-  newGame()
+  if(mobile(req)) {
+    res.redirect("/game")
+  } else {
+    res.render('game_view.ejs')
+  }
 })
 
 app.post("/game/new", function(req, res) {
@@ -65,8 +66,18 @@ app.post("/game/new", function(req, res) {
   res.status(200).send()
 })
 
+app.post("/game/join", function(req, res) {
+  players.push(req.body.username);
+  res.send(players.length)
+})
+
 app.get("/game", function(req, res) {
   res.render('game.ejs')
+})
+
+app.get("/game/status", function(req, res) {
+  console.log("Got status request.")
+  res.json(activeGame.status())
 })
 
 app.post("/", function(req, res) {
@@ -87,3 +98,4 @@ app.post("/", function(req, res) {
 })
 
 http.listen(port, () => console.log("Server online on port " + port))
+newGame()

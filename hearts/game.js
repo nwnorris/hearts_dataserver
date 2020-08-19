@@ -127,6 +127,7 @@ function Game() {
       output(msg)
     }
   }
+  this.mode = 'pregame'
   this.tricksPerRound = this.deck.size() / this.numPlayers
   this.nextPlayerTurn = function() {
     this.playerTurn += 1
@@ -143,13 +144,19 @@ function Game() {
   this.deal = function() {
     this.deck.deal(this.players)
   }
+
   this.newRound = function() {
     this.rounds.push(new Round())
     this.deck = new Deck()
     this.deal()
   }
+
   this.registerOutput = function(callback) {
     output = callback
+  }
+
+  this.status = function() {
+    return({mode: this.mode, turn: this.playerTurn})
   }
 
   this.playCard = function(card) {

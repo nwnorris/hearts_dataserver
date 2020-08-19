@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Hearts</title>
+	<script type="text/javascript" src="src/js/socket.io.js"></script>
+	<script src="src/js/game_view.js"></script>
+	<style type="text/css">
+		* {
+			font-family: Courier New, sans-serif;
+			margin: 0;
+		}
+
+		body {
+			padding: 10px;
+		}
+
+		.input_bar {
+			width: 100vw;
+			height: 10vh;
+			margin: auto;
+			position: fixed;
+			bottom: 0;
+			padding-bottom: 2vh;
+		}
+
+		.input_bar input {
+			width: 40%;
+			height: 100%;
+			position: relative;
+			border-radius: 0px;
+			font-size: 2em;
+		}
+
+	</style>
+</head>
+<body>
+	<h1>The Game of Hearts</h1>
+	<div class="game_log"></div>
+</body>
+</html>
