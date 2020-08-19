@@ -7,6 +7,7 @@ var port = 5000
 var io = require('socket.io')(http)
 var mobile = require('is-mobile')
 
+app.use(bp.urlencoded({extended: true}))
 app.use(bp.json())
 app.set('view engine', 'ejs')
 app.use("/src", express.static(path.join(__dirname, 'src')))
@@ -22,6 +23,12 @@ function sendLogMsg(msg) {
 function playCard(card) {
   var card = new game.Card(card)
   activeGame.playCard(card)
+}
+
+function startGame() {
+  sendLogMsg("Game is beginning!")
+  activeGame.start();
+  io.emit("update", "")
 }
 
 function newGame() {
@@ -78,6 +85,32 @@ app.get("/game", function(req, res) {
 app.get("/game/status", function(req, res) {
   console.log("Got status request.")
   res.json(activeGame.status())
+})
+
+app.post("/game/player", function(req, res) {
+  success = false
+  if(players.length < 4) {
+    console.log("Player joined: " + req.body.pid);
+    sendLogMsg("Player joined: " + req.body.pid)
+    players.push(req.body.pid)
+    success = true;
+    if(players.length == 4) {
+      startGame()
+    }
+  }
+  res.status(200).json({valid: success, pid: req.body.pid})
+})
+
+app.post("/game/player/hand", function(req, res) {
+  var pid = players.indexOf(req.body.pid);
+  console.log(req.body)
+  console.log("Sending hand to player " + pid)
+  if(pid >= 0) {
+    res.status(200).json(activeGame.getHand(pid));
+  } else {
+    res.status(300).json({})
+  }
+
 })
 
 app.post("/", function(req, res) {

@@ -1,13 +1,22 @@
 var socket = io();
-socket.emit('player-connect', 'Bobby')
 
-socket.on('game-message', (msg) => {
-	console.log(msg)
-	var log = document.getElementsByClassName("game_log")[0];
-	var p = document.createElement("P")
-	var text = document.createTextNode(msg)
-	p.append(text)
-	log.appendChild(p)
+var player = "";
+
+function showHand(response) {
+		console.log(response)
+}
+
+socket.on('update', (msg) => {
+	$.ajax({
+		method: "POST",
+		url: "http://localhost:5000/game/player/hand",
+		data: {
+			"pid" : player
+		},
+		success: function(response) {
+			showHand(response)
+		}
+	})
 })
 
 function updateState(gameState) {
@@ -21,16 +30,36 @@ function updateState(gameState) {
 	}
 }
 
+function init() {
+	$(".submit").click(function() {
+		var pid = $("#pid_input").val()
+		$.ajax({
+			type: "POST",
+			url: "http://localhost:5000/game/player",
+			data: {
+				"pid": pid
+			},
+			success: function (response) {
+				if(!response.valid) {
+					$(".entry_form_response").text("Game already full!");
+				} else {
+					player = response.pid;
+					$(".pid").text(player)
+					$("#pid_text").fadeToggle();
+					$(".entry_form").fadeToggle()
+				}
+			}
+
+		})
+	})
+}
+
+
 $(document).ready(function() {
+	init()
 	$.ajax({
 		url: "http://localhost:5000/game/status"
 	}).done(function(response) {
 		updateState(response)
 	})
-})
-
-$(".submit").click(function() {
-	console.log("heyo")
-	var pid = $(this).text()
-	console.log(pid)
 })

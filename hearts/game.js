@@ -159,6 +159,23 @@ function Game() {
     return({mode: this.mode, turn: this.playerTurn})
   }
 
+  this.getHand = function(pid) {
+    if(pid < this.players.length) {
+      return this.players[pid].hand.cards;
+    } else {
+      return undefined;
+    }
+
+  }
+
+  this.start = function() {
+    this.mode = 'ingame';
+    for(var i = 0; i < 4; i++) {
+      this.players.push(new Player(i))
+    }
+    this.newRound();
+  }
+
   this.playCard = function(card) {
     output(this.playerTurn + " plays " + card)
 
@@ -188,11 +205,6 @@ function Game() {
     this.currentTurn()
 
   }
-
-  for(var i = 0; i < 4; i++) {
-    this.players.push(new Player(i))
-  }
-  this.newRound()
 
 }
 
