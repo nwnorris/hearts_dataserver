@@ -20,43 +20,49 @@ function sendLogMsg(msg) {
   io.emit('game-message', msg);
 }
 
-function playCard(card) {
-  var card = new game.Card(card)
+function playCard(player, cardNum) {
+  var card = new game.Card(cardNum)
+  io.emit('play-card', {card: cardNum, player: activeGame.playerTurn});
+  sendLogMsg(player + " plays " + card.shortName())
   activeGame.playCard(card)
+  setTimeout(function() {
+    io.emit("turn", activeGame.playerTurn)
+  }, 30)
+
+  console.log("It is " + activeGame.playerTurn + "'s turn.")
 }
 
 function startGame() {
-  sendLogMsg("Game is beginning!")
   activeGame.start();
+}
+
+var onStart = function() {
   io.emit("update", "")
+  io.emit("turn", activeGame.playerTurn)
+  console.log("It is " + activeGame.playerTurn + "'s turn.'")
 }
 
 function newGame() {
   activeGame = new game.Game()
   activeGame.registerOutput(sendLogMsg)
+  activeGame.onStart = onStart
   activeGame.currentTurn()
 }
 
+function debugPlayers(numPlayers) {
+  for(var i = 0; i < numPlayers; i++) {
+    players.push("debug" + (i+1))
+  }
+  startGame()
+}
+
 //--SOCKET--//
-
 io.on('connection', function(socket) {
-  socket.on('player-connect', (id) => {
-    // if(players.length < 4) {
-    //   players.push(id)
-    //   console.log("Player " + players.length + " connected: " + id)
-    //   socket.emit('game-message', "Welcome to the game.")
-    //   if(players.length == 1) {
-    //     socket.emit('game-message', "The game begins.")
-    //     newGame()
-    //   }
-    // }
-  })
-
-  socket.on('play-card', (card) => {
-    if(card != undefined) {
-      playCard(card.card)
-    }
-  })
+  // socket.on('play-card', (card) => {
+  //   if(card != undefined) {
+  //     playCard(card.player, card.card)
+  //   }
+  // })
 })
 
 //--ROUTES--//
@@ -73,13 +79,18 @@ app.post("/game/new", function(req, res) {
   res.status(200).send()
 })
 
-app.post("/game/join", function(req, res) {
-  players.push(req.body.username);
-  res.send(players.length)
-})
-
 app.get("/game", function(req, res) {
   res.render('game.ejs')
+})
+
+app.post("/game/play", function(req, res) {
+  var player = parseInt(req.body.player);
+  var card = parseInt(req.body.card);
+  if(card) {
+    console.log("Recieved post to /game/play for card: " + card)
+    playCard(player, card)
+  }
+  res.status(200).send()
 })
 
 app.get("/game/status", function(req, res) {
@@ -88,46 +99,22 @@ app.get("/game/status", function(req, res) {
 })
 
 app.post("/game/player", function(req, res) {
-  success = false
-  if(players.length < 4) {
-    console.log("Player joined: " + req.body.pid);
-    sendLogMsg("Player joined: " + req.body.pid)
-    players.push(req.body.pid)
-    success = true;
-    if(players.length == 4) {
-      startGame()
-    }
-  }
-  res.status(200).json({valid: success, pid: req.body.pid})
+  var success = activeGame.addPlayer(req.body.pid)
+  res.status(200).json({valid: success, pid: req.body.pid, pnum: activeGame.players.length - 1})
+  // if(activeGame.players.length == 3) {
+  //   startGame()
+  // }
 })
 
 app.post("/game/player/hand", function(req, res) {
-  var pid = players.indexOf(req.body.pid);
-  console.log(req.body)
-  console.log("Sending hand to player " + pid)
+  var pid = activeGame.getPlayerId(req.body.pid);
+  console.log("Hand request from: " + req.body.pid)
   if(pid >= 0) {
     res.status(200).json(activeGame.getHand(pid));
   } else {
     res.status(300).json({})
   }
 
-})
-
-app.post("/", function(req, res) {
-  try {
-    var played_card = req.body.card
-    if(played_card != undefined) {
-      playCard(played_card)
-      res.status(200).send()
-    } else {
-      console.log("Malformed body. Unable to get card.")
-      res.status(400).send()
-    }
-
-  } catch (e) {
-    console.log(e)
-    res.status(400).send()
-  }
 })
 
 http.listen(port, () => console.log("Server online on port " + port))

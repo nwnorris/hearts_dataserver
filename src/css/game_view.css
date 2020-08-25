@@ -1,0 +1,12 @@
+* {
+  font-family: Courier New, sans-serif;
+  margin: 0;
+}
+
+body {
+  padding: 10px;
+}
+
+.game_log {
+  height: 60vh;
+}

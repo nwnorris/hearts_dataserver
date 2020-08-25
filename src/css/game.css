@@ -53,3 +53,9 @@ body {
 #pid_text {
   display: none;
 }
+
+.turn {
+  color: red;
+  font-size: 2em;
+  display: none;
+}

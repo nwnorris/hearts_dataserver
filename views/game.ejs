@@ -5,13 +5,13 @@
 	<meta charset="utf-8">
 	<script type="text/javascript" src="src/js/socket.io.js"></script>
 	<script type="text/javascript" src="src/js/jquery-3.3.1.min.js"></script>
-	<script src="src/js/game.js"></script>
 	<link rel="stylesheet" type="text/css" href="src/css/game.css">
+	<link rel="stylesheet" href="src/css/cards.css">
 </head>
 <body>
 	<h1>The Game of Hearts</h1>
 	<h3 id="pid_text">Player Name: <span class="pid">Undefined</span></h3>
-
+	<h1 class="turn">!</h1>
 	<div class="entry_form">
 		<h2>Enter your player name:</h2>
 		<input type="text" id="pid_input"/>
@@ -20,5 +20,10 @@
 		</div>
 		<h2 class="entry_form_response"></h2>
 	</div>
+
+	<div class="card_container">
+
+	</div>
+	<script src="src/js/game.js"></script>
 </body>
 </html>

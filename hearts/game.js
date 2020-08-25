@@ -74,8 +74,9 @@ function Hand() {
   }
 }
 
-function Player(id) {
+function Player(id, name) {
   this.id = id
+  this.name = name
   this.hand = new Hand()
 }
 
@@ -122,6 +123,7 @@ function Game() {
   this.activeTrick = new Trick()
   this.numPlayers = 4
   this.output = null
+  this.onStart = null
   this.log = function(msg) {
     if(output != null) {
       output(msg)
@@ -129,10 +131,20 @@ function Game() {
   }
   this.mode = 'pregame'
   this.tricksPerRound = this.deck.size() / this.numPlayers
+
   this.nextPlayerTurn = function() {
     this.playerTurn += 1
     this.playerTurn %= 4
   }
+
+  this.getPlayerId = function(name) {
+    for(var i = 0; i < this.players.length; i++) {
+      if(this.players[i].name == name) {
+        return i;
+      }
+    }
+  }
+
   this.currentRound = function() {
     return this.rounds[this.rounds.length - 1]
   }
@@ -149,6 +161,7 @@ function Game() {
     this.rounds.push(new Round())
     this.deck = new Deck()
     this.deal()
+    this.currentTurn()
   }
 
   this.registerOutput = function(callback) {
@@ -165,14 +178,35 @@ function Game() {
     } else {
       return undefined;
     }
+  }
+
+  this.addPlayer = function(playerName) {
+    var success = true
+    if(this.players.length < 4) {
+      var id = this.players.length
+      var player = new Player(id, playerName)
+      this.players.push(player)
+      output("Player joined: " + player.name)
+      success = true
+      if(this.players.length == 4) {
+        this.start()
+      }
+    }
+
+    return success;
 
   }
 
   this.start = function() {
-    this.mode = 'ingame';
-    for(var i = 0; i < 4; i++) {
-      this.players.push(new Player(i))
+    output("Game is beginning!")
+    if(this.onStart != null) {
+      this.onStart()
     }
+    this.mode = 'ingame';
+    //Add enough dummy players to start
+    // for(var i = 0; i <= (4 - this.players.length); i++) {
+    //   this.players.push(new Player(i, "BigBoy" + i))
+    // }
     this.newRound();
   }
 
