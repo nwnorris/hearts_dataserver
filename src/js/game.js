@@ -6,75 +6,20 @@ var offset = -1;
 var suitNames = ["C", "S", "D", "H"]
 var valueNames = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"]
 var myTurn = false
-var trickCards = 0
+var hasSelected = false
 var ch = 0
 var cw = 0
 
-function animatePlay(card) {
-	var y = card.height() * 1.2 * -1
-	var x = ($(window).width() / 2) - (card.width()/2)
-	var dx = x - card.position().left
-	card.css("transform", "translateY(" + y + "px) " + "translateX(" + dx + "px) rotate(180deg)")
-}
-
-function animateIn(card, pnum) {
-	var position = getOffsetPosition(pnum)
-	var endX = 0
-	var endY = 0
-	var startX = 0
-	var startY = 0
-
-	switch(position) {
-		case 0:
-			endX = $(window).width() / 2
-			startX = endX
-			endY = $(window).height() - (ch * 2)
-			startY = endY
-			break;
-		case 1:
-			endX = ch
-			startX = endX
-			endY = $(window).height() - (ch * 3.5)
-			startY = endY
-			break;
-		case 2:
-			endX = $(window).width() / 2
-			startX = endX
-			endY = ch
-			startY = endY
-			break;
-		case 3:
-			endX = $(window).width() - ch
-			startX = endX
-			endY = $(window).height() - (ch * 3.5)
-			startY = endY
-			break;
-		}
-		console.log("Animating in card from position " + position + " at pos " + position + ": (" + endX + "," + endY + ")")
-
-	card.toggleClass("played")
-	card.css("transition", "all 0.2s")
-	card.css("bottom", "")
-	card.css("top", "")
-	card.css("left", "")
-	card.css("top", endY + "px")
-	card.css("left", endX + "px")
-	if(position % 2 == 0) {
-		card.css("transform", "rotate(180deg)")
-	} else {
-		card.css("transform", "rotate(270deg)")
-	}
-
-}
-
-function getOffsetPosition(playerNumber) {
-	//Assume that I sit at seat 0, and seats increment clockwise.
-	console.log("getting offset (" + offset + ") for player " + playerNumber)
-	return (playerNumber + offset) % 4
+function animateOut(card, pnum) {
+	//Convert absolute player ID to relative player position, then get position coords
+	var coords = {x: $(window).width() / 2, y: ch * -1}
+	card.css("top", coords.y + "px")
+	card.css("left", coords.x + "px")
 }
 
 function playCard(card) {
 	var id = card.attr('id')
+	console.log("Posting my play of card " + id)
 	$.ajax({
 		method: "POST",
 		url: "http://localhost:5000/game/play",
@@ -83,15 +28,19 @@ function playCard(card) {
 			"card": parseInt(id)
 		},
 		success: function(res) {
-			animateIn(card, pnum)
-			trickCards += 1
+			animateOut(card, pnum)
 		}
 	});
 }
 
-function conditionalPlay() {
+function conditionalSelect() {
 	if(myTurn){
-		playCard($(this))
+		if($(this).hasClass("selected")){
+			playCard($(this))
+		} else {
+			$(".selected").removeClass("selected")
+			$(this).addClass("selected")
+		}
 	}
 }
 
@@ -99,7 +48,9 @@ function addCard(cardId) {
 	var card = $('<div class="card" id="' + cardId + '"></div>"')
 	var link = "url(src/img/cards/" + ntoc(cardId) + ".png)"
 	card.css("background-image", link)
-	card.click(conditionalPlay)
+	card.css("width", cw + "px")
+	card.css("height", ch + "px")
+	card.click(conditionalSelect)
 	$(".card_container").append(card)
 }
 
@@ -121,13 +72,14 @@ function showHand(response) {
 		})
 
 		layoutCards()
+		updateCards()
 }
 
 function layoutCards() {
 	var width = $(".card_container").width() * 0.9
 	var padding = $(".card_container").width() * 0.1
 
-	ch = $(".card_container").height() * 0.2
+	ch = $(".card_container").height() * 0.4
 	cw = ch / 1.523 // Card size ratio
 
 	$(".card").css("width", cw + "px")
@@ -143,13 +95,23 @@ function layoutCards() {
 			$(this).css("left", offset + "px")
 		}
 	})
+}
+
+function updateCards(leadSuit = -1) {
 	if(!myTurn) {
-		cards.css("filter", "grayscale(60%)")
+		$(".card").removeClass("enabled")
 	} else {
-		cards.css("filter", "grayscale(0%)")
+		$(".card").addClass("enabled")
 	}
 
-	addCardListener()
+	if(leadSuit >= 0) {
+		$(".card").each(function() {
+			var suit = Math.floor($(this).attr('id') / 13)
+			if(suit != leadSuit && !$(this).hasClass("played")) {
+				$(this).removeClass("enabled")
+			}
+		})
+	}
 }
 
 function update(local = false) {
@@ -165,38 +127,54 @@ function update(local = false) {
 			}
 		})
 	} else {
-		layoutCards()
+		updateCards()
 	}
 }
 
-socket.on('play-card', (msg) => {
-	var card = msg.card
-	var player = msg.player
-	if(!myTurn && msg != undefined) {
-		trickCards += 1
-		addCard(card)
-		animateIn($("#" + card), player)
-		console.log("Card " + card + " played by P" + player)
-	} else {
-		console.log("Cannot recieve played card -- my turn, or bad card.")
-	}
-})
+function collectTrick(trick, pnum) {
+	trick.each(function() {
+		animateOut($(this), pnum)
+	})
+	$(".played").fadeOut()
+	setTimeout(function(){
+		$(".played").remove()
+	}, 250)
+}
 
+// -- SOCKET -- //
 socket.on('update', (msg) => {
 	update()
 })
 
 socket.on('turn', (msg) => {
-	console.log("TURN: " + msg)
-	if(msg == pnum) {
+	var player = msg.pid
+	var leadSuit = (msg.leadSuit == undefined) ? -1 : msg.leadSuit
+	console.log("TURN: " + player + " (I am " + pnum + "), lead: " + leadSuit)
+	if(player == pnum) {
 		myTurn = true
 		$(".turn").css("display", "block")
 	} else {
 		myTurn = false
 		$(".turn").css("display", "none")
 	}
-	update(true)
+	updateCards(leadSuit)
 })
+
+socket.on('trick-complete', (msg) => {
+	var trick = $(".played")
+	collectTrick(trick, msg.winner)
+})
+
+socket.on('score-update', (msg) => {
+	console.log(msg)
+	for(var i = 0; i < msg.players.length; i++){
+		var p = msg.players[i]
+		$("#pname_" + p.id).text(p.name)
+		$("#pscore_" + p.id).text(p.score)
+	}
+})
+
+// -- END SOCKET -- //
 
 function updateState(gameState) {
 	var mode = gameState.mode
@@ -231,7 +209,6 @@ $(".submit").click(function() {
 			} else {
 				player = response.pid;
 				pnum = response.pnum;
-				offset = 4 - pnum; //seat offset for visualization
 				$(".pid").text(player + "(" + pnum + ")")
 				$("#pid_text").fadeToggle();
 				$(".entry_form").fadeToggle()

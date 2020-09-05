@@ -26,10 +26,23 @@ function playCard(player, cardNum) {
   sendLogMsg(player + " plays " + card.shortName())
   activeGame.playCard(card)
   setTimeout(function() {
-    io.emit("turn", activeGame.playerTurn)
+    sendTurn()
   }, 30)
+}
 
-  console.log("It is " + activeGame.playerTurn + "'s turn.")
+function sendTurn() {
+  io.emit("turn", {pid: activeGame.playerTurn, leadSuit: activeGame.activeTrick.leadSuit})
+}
+
+function sendScore() {
+  var data = {
+    players: []
+  }
+  for(var i = 0; i < activeGame.players.length; i++){
+    var p = activeGame.players[i]
+    data.players.push({id: p.id, name: p.name, score: activeGame.score[i]})
+  }
+  io.emit('score-update', data)
 }
 
 function startGame() {
@@ -37,15 +50,30 @@ function startGame() {
 }
 
 var onStart = function() {
-  io.emit("update", "")
-  io.emit("turn", activeGame.playerTurn)
-  console.log("It is " + activeGame.playerTurn + "'s turn.'")
+  setTimeout(function() {
+    io.emit("update", "")
+    sendScore()
+    sendTurn()
+  }, 500);
+}
+
+var onRoundEnd = function() {
+  sendScore()
+  onStart()
+}
+
+var trickDone = function(winner) {
+  setTimeout(function() {
+    io.emit("trick-complete", {'winner': winner})
+  }, 150)
 }
 
 function newGame() {
   activeGame = new game.Game()
   activeGame.registerOutput(sendLogMsg)
   activeGame.onStart = onStart
+  activeGame.onCompleteTrick = trickDone
+  activeGame.onRoundEnd = onRoundEnd
   activeGame.currentTurn()
 }
 
@@ -58,11 +86,7 @@ function debugPlayers(numPlayers) {
 
 //--SOCKET--//
 io.on('connection', function(socket) {
-  // socket.on('play-card', (card) => {
-  //   if(card != undefined) {
-  //     playCard(card.player, card.card)
-  //   }
-  // })
+
 })
 
 //--ROUTES--//
@@ -86,9 +110,11 @@ app.get("/game", function(req, res) {
 app.post("/game/play", function(req, res) {
   var player = parseInt(req.body.player);
   var card = parseInt(req.body.card);
-  if(card) {
+  if(card >= 0 && card < 52) {
     console.log("Recieved post to /game/play for card: " + card)
     playCard(player, card)
+  } else {
+    console.log("Error processing play request from player " + player + " for card: " + card)
   }
   res.status(200).send()
 })
@@ -101,9 +127,6 @@ app.get("/game/status", function(req, res) {
 app.post("/game/player", function(req, res) {
   var success = activeGame.addPlayer(req.body.pid)
   res.status(200).json({valid: success, pid: req.body.pid, pnum: activeGame.players.length - 1})
-  // if(activeGame.players.length == 3) {
-  //   startGame()
-  // }
 })
 
 app.post("/game/player/hand", function(req, res) {

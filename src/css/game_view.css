@@ -9,4 +9,14 @@ body {
 
 .game_log {
   height: 60vh;
+  max-height: 60vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  overflow-y: scroll;
+}
+
+.player-name {
+  font-weight: bold;
+  position: fixed;
 }

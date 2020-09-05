@@ -9,9 +9,27 @@
 	<link rel="stylesheet" href="src/css/cards.css">
 </head>
 <body>
-	<h1>The Game of Hearts</h1>
-	<h3 id="pid_text">Player Name: <span class="pid">Undefined</span></h3>
-	<h1 class="turn">!</h1>
+	<div class="header">
+		<h1>The Game of Hearts</h1>
+		<h3 id="pid_text">Player Name: <span class="pid">Undefined</span></h3>
+		<h1 class="turn">!</h1>
+	</div>
+
+	<div class="score">
+		<ul>
+			<li id="pname_0">P1</li>
+			<li id="pname_1">P2</li>
+			<li id="pname_2">P3</li>
+			<li id="pname_3">P4</li>
+		</ul>
+		<ul>
+			<li id="pscore_0">0</li>
+			<li id="pscore_1">0</li>
+			<li id="pscore_2">0</li>
+			<li id="pscore_3">0</li>
+		</ul>
+	</div>
+
 	<div class="entry_form">
 		<h2>Enter your player name:</h2>
 		<input type="text" id="pid_input"/>
