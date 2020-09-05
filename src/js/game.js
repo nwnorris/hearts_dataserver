@@ -11,6 +11,9 @@ var hasSelected = false
 var ch = 0
 var cw = 0
 
+var SERVER_URL = "http://hearts.nnorris.com"
+//var SERVER_URL = "http://localhost:5000"
+
 function animateOut(card, pnum) {
 	//Convert absolute player ID to relative player position, then get position coords
 	var coords = {x: $(window).width() / 2, y: ch * -1}
@@ -26,7 +29,7 @@ function playCard(card) {
 	console.log("Posting my play of card " + id)
 	$.ajax({
 		method: "POST",
-		url: "http://localhost:5000/game/play",
+		url: SERVER_URL + "/game/play",
 		data: {
 			"player": parseInt(pnum),
 			"card": parseInt(id)
@@ -106,7 +109,7 @@ function updateCards() {
 	if(myTurn) {
 		$.ajax({
 			method: "POST",
-			url: "http://localhost:5000/game/player/playable",
+			url: SERVER_URL + "/game/player/playable",
 			data: {
 				"pid" : pnum
 			},
@@ -125,7 +128,7 @@ function update(local = false) {
 	if(!local) {
 		$.ajax({
 			method: "POST",
-			url: "http://localhost:5000/game/player/hand",
+			url: SERVER_URL + "/game/player/hand",
 			data: {
 				"pid" : player,
 				"session" : session
@@ -240,7 +243,7 @@ $(".submit").click(function() {
 	player = pid
 	$.ajax({
 		type: "POST",
-		url: "http://localhost:5000/game/player",
+		url: SERVER_URL + "/game/player",
 		data: {
 			"pid": pid
 		},
@@ -267,7 +270,7 @@ $(".submit").click(function() {
 function getStatus() {
 	$.ajax({
 		method: "POST",
-		url: "http://localhost:5000/game/status",
+		url: SERVER_URL + "/game/status",
 		data: {
 			"session" : session
 		}
