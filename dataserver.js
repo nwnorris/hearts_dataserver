@@ -1,6 +1,7 @@
 var express = require('express')
 var bp = require('body-parser')
 var path = require('path')
+const { uuid } = require('uuidv4')
 var app = express()
 var http = require('http').createServer(app)
 var port = 5000
@@ -14,6 +15,7 @@ app.use("/src", express.static(path.join(__dirname, 'src')))
 
 var game = require('./hearts/game.js')
 var players = []
+var sessions = new Map()
 var activeGame = null
 
 function sendLogMsg(msg) {
@@ -22,9 +24,9 @@ function sendLogMsg(msg) {
 
 function playCard(player, cardNum) {
   var card = new game.Card(cardNum)
+  activeGame.playCard(card)
   io.emit('play-card', {card: cardNum, player: activeGame.playerTurn});
   sendLogMsg(player + " plays " + card.shortName())
-  activeGame.playCard(card)
   setTimeout(function() {
     sendTurn()
   }, 30)
@@ -119,25 +121,47 @@ app.post("/game/play", function(req, res) {
   res.status(200).send()
 })
 
-app.get("/game/status", function(req, res) {
+app.post("/game/status", function(req, res) {
   console.log("Got status request.")
-  res.json(activeGame.status())
+  if(req.body.session in sessions) {
+    res.status(200).json(activeGame.status())
+  } else {
+    console.log("Invalid session request.")
+    res.status(401).send()
+  }
+
 })
 
 app.post("/game/player", function(req, res) {
   var success = activeGame.addPlayer(req.body.pid)
-  res.status(200).json({valid: success, pid: req.body.pid, pnum: activeGame.players.length - 1})
+  var pid = activeGame.players.length - 1
+  var session = uuid();
+  sessions[session] = pid
+  res.status(200).json({valid: success, player: req.body.pid, pid: pid, session: session})
 })
 
 app.post("/game/player/hand", function(req, res) {
-  var pid = activeGame.getPlayerId(req.body.pid);
-  console.log("Hand request from: " + req.body.pid)
-  if(pid >= 0) {
-    res.status(200).json(activeGame.getHand(pid));
+  if(req.body.session in sessions) {
+    var pid = activeGame.getPlayerId(req.body.pid);
+    console.log("Hand request from: " + req.body.pid)
+    if(pid >= 0) {
+      res.status(200).json(activeGame.getHand(pid));
+    } else {
+      res.status(300).json({})
+    }
   } else {
     res.status(300).json({})
   }
+})
 
+app.post("/game/player/playable", function(req, res) {
+  console.log(req.body.pid + " requested playable card set.")
+    if(req.body.pid >= 0 && req.body.pid < 4) {
+      var cards = activeGame.getPlayableCards(req.body.pid)
+      res.status(200).json(cards)
+    } else {
+      res.status(300).json({})
+    }
 })
 
 http.listen(port, () => console.log("Server online on port " + port))

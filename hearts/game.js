@@ -78,12 +78,34 @@ function Hand() {
     }
     return false
   }
+  this.indexOf = function(id) {
+    for(var i = 0; i < this.cards.length; i++) {
+      if(this.cards[i].num == id) return i
+    }
+    return -1
+  }
+  this.clear = function() {
+    this.cards = []
+  }
+  this.remove = function(card) {
+    var result = this.indexOf(card.num)
+    var c = this.cards.splice(result, 1)
+  }
 }
 
 function Player(id, name) {
   this.id = id
   this.name = name
   this.hand = new Hand()
+  this.hasCard = function(id) {
+    return this.hand.indexOf(id)
+  }
+  this.getCard = function(index) {
+    return this.hand.cards[index]
+  }
+  this.remove = function(card) {
+    this.hand.remove(card)
+  }
 }
 
 function Play(player, card) {
@@ -96,6 +118,7 @@ function Trick() {
   this.playedCards = []
   this.winner = undefined
   this.leadSuit = undefined
+  this.containsHearts = false
   this.makePlay = function(player, card) {
     var p = new Play(player, card)
     this.playedCards.push(p)
@@ -106,6 +129,9 @@ function Trick() {
     if(this.leadSuit == undefined) {
       this.leadSuit = card.suit
     }
+    if(card.suit == 3) {
+      this.containsHearts = true
+    }
   }
   this.completed = function() {
     return this.playedCards.length == 4 ? true : false
@@ -115,9 +141,14 @@ function Trick() {
 function Round() {
   this.tricks = []
   this.playerPoints = [0, 0, 0, 0]
+  this.pointsBroken = false
   this.addTrick = function(trick) {
     this.playerPoints[trick.winner.player] += trick.points
     this.tricks.push(trick)
+    if(!this.pointsBroken && trick.containsHearts) {
+      this.pointsBroken = true
+      console.log("[ALERT] Points have been broken!")
+    }
   }
   this.size = function() {
     return this.tricks.length
@@ -166,6 +197,9 @@ function Game() {
   }
 
   this.deal = function() {
+    for(var i = 0; i < this.players.length; i++){
+      this.players[i].hand.clear()
+    }
     this.deck.deal(this.players)
   }
 
@@ -189,7 +223,11 @@ function Game() {
   }
 
   this.status = function() {
-    return({mode: this.mode, turn: this.playerTurn})
+    var playerNames = []
+    for(var i = 0; i < this.players.length; i++) {
+      playerNames.push(this.players[i].name)
+    }
+    return({mode: this.mode, turn: this.playerTurn, players: playerNames, score: this.score, turn: this.playerTurn})
   }
 
   this.getHand = function(pid) {
@@ -228,8 +266,10 @@ function Game() {
 
   this.playCard = function(card) {
     output(this.playerTurn + " plays " + card)
-
+    console.log(this.playerTurn + " plays " + card)
     this.activeTrick.makePlay(this.playerTurn, card)
+    this.players[this.playerTurn].remove(card)
+    console.log("Player " + this.playerTurn + " now has " + this.players[this.playerTurn].hand.cards.length + " cards in hand.")
     this.nextPlayerTurn()
 
     if(this.activeTrick.completed()) {
@@ -258,7 +298,56 @@ function Game() {
     }
 
     this.currentTurn()
+  }
 
+  this.getPlayableCards = function(pid) {
+      var player = this.players[pid]
+      var round = this.rounds[this.rounds.length - 1]
+      var trick = this.activeTrick
+      var playable = []
+      //Check if this player is on the lead
+      if(trick.playedCards.length == 0 && player.id == this.playerTurn) {
+        //Must play 2 of clubs on first lead of round
+        if(round.tricks.length == 0) {
+          var clubIndex = player.hasCard(0)
+          if(clubIndex >= 0) {
+            playable.push(player.getCard(clubIndex))
+          }
+        } else {
+          //Not first round, can lead any suit (excluding hearts if points aren't broken)
+          if(round.pointsBroken) {
+            playable = player.hand.cards
+          } else {
+            for(var i = 0; i < player.hand.cards.length; i++) {
+              var card = player.hand.cards[i]
+              if(card.suit < 3) {
+                playable.push(card)
+              }
+            }
+            //If all player has is hearts, can lead them.
+            if(playable.length == 0) {
+              playable = player.hand.cards;
+            }
+          }
+
+        }
+      } else {
+        //Not on the lead -- must follow lead suit if possible
+        var hasPlay = false
+        for(var i = 0; i < player.hand.cards.length; i++) {
+          var card = player.hand.cards[i]
+          if(card.suit == trick.leadSuit) {
+            playable.push(card)
+            hasPlay = true
+          }
+        }
+        if(!hasPlay) {
+          console.log("No cards of lead suit. Offsuit play allowed!")
+          playable = player.hand.cards
+        }
+      }
+
+      return playable
   }
 
 }

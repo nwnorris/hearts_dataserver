@@ -2,6 +2,7 @@ var socket = io();
 
 var player = "";
 var pnum = -1;
+var session = undefined;
 var offset = -1;
 var suitNames = ["C", "S", "D", "H"]
 var valueNames = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"]
@@ -15,6 +16,9 @@ function animateOut(card, pnum) {
 	var coords = {x: $(window).width() / 2, y: ch * -1}
 	card.css("top", coords.y + "px")
 	card.css("left", coords.x + "px")
+	setTimeout(function() {
+		card.remove()
+	}, 250)
 }
 
 function playCard(card) {
@@ -34,7 +38,7 @@ function playCard(card) {
 }
 
 function conditionalSelect() {
-	if(myTurn){
+	if($(this).hasClass("enabled") && myTurn){
 		if($(this).hasClass("selected")){
 			playCard($(this))
 		} else {
@@ -97,21 +101,24 @@ function layoutCards() {
 	})
 }
 
-function updateCards(leadSuit = -1) {
-	if(!myTurn) {
-		$(".card").removeClass("enabled")
-	} else {
-		$(".card").addClass("enabled")
-	}
-
-	if(leadSuit >= 0) {
-		$(".card").each(function() {
-			var suit = Math.floor($(this).attr('id') / 13)
-			if(suit != leadSuit && !$(this).hasClass("played")) {
-				$(this).removeClass("enabled")
+function updateCards() {
+	$(".card").removeClass("enabled")
+	if(myTurn) {
+		$.ajax({
+			method: "POST",
+			url: "http://localhost:5000/game/player/playable",
+			data: {
+				"pid" : pnum
+			},
+			success: function(data) {
+				for(var i = 0; i < data.length; i++) {
+					var id = data[i].num
+					$("#" + id).addClass("enabled")
+				}
 			}
 		})
 	}
+
 }
 
 function update(local = false) {
@@ -120,7 +127,8 @@ function update(local = false) {
 			method: "POST",
 			url: "http://localhost:5000/game/player/hand",
 			data: {
-				"pid" : player
+				"pid" : player,
+				"session" : session
 			},
 			success: function(response) {
 				showHand(response)
@@ -141,6 +149,17 @@ function collectTrick(trick, pnum) {
 	}, 250)
 }
 
+function updateTurn(pid) {
+	if(pid == pnum) {
+		myTurn = true
+		$(".turn").css("display", "block")
+	} else {
+		myTurn = false
+		$(".turn").css("display", "none")
+	}
+	updateCards()
+}
+
 // -- SOCKET -- //
 socket.on('update', (msg) => {
 	update()
@@ -150,14 +169,7 @@ socket.on('turn', (msg) => {
 	var player = msg.pid
 	var leadSuit = (msg.leadSuit == undefined) ? -1 : msg.leadSuit
 	console.log("TURN: " + player + " (I am " + pnum + "), lead: " + leadSuit)
-	if(player == pnum) {
-		myTurn = true
-		$(".turn").css("display", "block")
-	} else {
-		myTurn = false
-		$(".turn").css("display", "none")
-	}
-	updateCards(leadSuit)
+	updateTurn(player)
 })
 
 socket.on('trick-complete', (msg) => {
@@ -179,9 +191,30 @@ socket.on('score-update', (msg) => {
 function updateState(gameState) {
 	var mode = gameState.mode
 	if(mode == "pregame") {
-
+		$("#pid_text").fadeOut();
+		$(".entry_form").fadeIn()
+		$(".card_container").fadeOut()
+		$(".score").fadeOut()
 	} else if(mode == "ingame") {
+		console.log("INGAME")
+		$("#pid_text").fadeIn();
+		$(".entry_form").fadeOut()
+		$(".card_container").fadeIn()
 
+		if(gameState.players) {
+			for(var i = 0; i < gameState.players.length; i++) {
+				$("#pname_" + i).text(gameState.players[i])
+			}
+		}
+		if(gameState.score) {
+			for(var i = 0; i < gameState.score.length; i++) {
+				$("#pscore_" + i).text(gameState.score[i])
+			}
+		}
+		if(gameState.turn >= 0 && gameState.turn < 4) {
+			updateTurn(gameState.turn)
+		}
+		$(".score").fadeIn()
 	} else if(mode == "postgame") {
 
 	}
@@ -191,6 +224,14 @@ function ntoc(n) {
 	var suit = Math.floor(n/13)
 	var value = n % 13
 	return valueNames[value] + suitNames[suit]
+}
+
+function clearStorage() {
+	if(localStorage) {
+		localStorage['player'] = undefined
+		localStorage['pid'] = undefined
+		localStorage['session'] = undefined
+	}
 }
 
 
@@ -207,17 +248,37 @@ $(".submit").click(function() {
 			if(!response.valid) {
 				$(".entry_form_response").text("Game already full!");
 			} else {
-				player = response.pid;
-				pnum = response.pnum;
+				player = response.player;
+				pnum = response.pid;
+				session = response.session;
+				if(localStorage) {
+					localStorage['player'] = player
+					localStorage['pid'] = pnum
+					localStorage['session'] = response.session
+				}
 				$(".pid").text(player + "(" + pnum + ")")
-				$("#pid_text").fadeToggle();
-				$(".entry_form").fadeToggle()
-				$(".card_container").fadeToggle()
+				updateState({mode: "ingame"})
 			}
 		}
 
 	})
 })
+
+function getStatus() {
+	$.ajax({
+		method: "POST",
+		url: "http://localhost:5000/game/status",
+		data: {
+			"session" : session
+		}
+	}).done(function(response) {
+		updateState(response)
+		update()
+	}).fail(function(response) {
+		clearStorage()
+		updateState({mode: "pregame"})
+	})
+}
 
 $(window).resize(function() {
 	layoutCards()
@@ -225,9 +286,16 @@ $(window).resize(function() {
 
 
 $(document).ready(function() {
-	$.ajax({
-		url: "http://localhost:5000/game/status"
-	}).done(function(response) {
-		updateState(response)
-	})
+	if(localStorage) {
+		var tempPlayer = localStorage['player']
+		var tempPid = localStorage['pid']
+		var tempSession = localStorage['session']
+		if(tempPlayer != undefined && (tempPid >= 0 && tempPid < 4)) {
+			player = tempPlayer
+			pnum = tempPid
+			session = tempSession
+			$(".pid").text(player + "(" + pnum + ")")
+		}
+	}
+	getStatus()
 })
