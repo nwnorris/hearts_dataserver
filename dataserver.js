@@ -1,6 +1,7 @@
 var express = require('express')
 var bp = require('body-parser')
 var path = require('path')
+var fs = require('fs')
 const { uuid } = require('uuidv4')
 var app = express()
 var http = require('http').createServer(app)
@@ -17,6 +18,8 @@ var game = require('./hearts/game.js')
 var players = []
 var sessions = new Map()
 var activeGame = null
+
+var host = JSON.parse(fs.readFileSync('./host.json', {encoding: 'utf8', flag: 'r'})).host
 
 function sendLogMsg(msg) {
   io.emit('game-message', msg);
@@ -106,7 +109,7 @@ app.post("/game/new", function(req, res) {
 })
 
 app.get("/game", function(req, res) {
-  res.render('game.ejs')
+  res.render('game.ejs', {host: host})
 })
 
 app.post("/game/play", function(req, res) {

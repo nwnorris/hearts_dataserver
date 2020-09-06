@@ -88,3 +88,7 @@ body {
 .score ul li {
   text-align: center;
 }
+
+.host {
+  display: none;
+}

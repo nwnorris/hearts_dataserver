@@ -36,6 +36,7 @@ function playCard(card) {
 		},
 		success: function(res) {
 			animateOut(card, pnum)
+			layoutCards()
 		}
 	});
 }
@@ -289,6 +290,7 @@ $(window).resize(function() {
 
 
 $(document).ready(function() {
+	SERVER_URL = "http://" + $(".host").text()
 	if(localStorage) {
 		var tempPlayer = localStorage['player']
 		var tempPid = localStorage['pid']
