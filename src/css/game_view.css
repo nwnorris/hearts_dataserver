@@ -11,12 +11,34 @@ body {
   height: 60vh;
   max-height: 60vh;
   position: fixed;
-  top: 0;
-  left: 0;
-  overflow-y: scroll;
+  top: 10vh;
+  left: 10px;
+  overflow-y: none;
 }
 
 .player-name {
   font-weight: bold;
   position: fixed;
+}
+
+.player-info {
+  position: fixed;
+  display: none;
+  width: auto;
+  height: auto;
+  padding: 10px;
+  border: 1px solid black;
+  box-shadow: 0 0 5px #ccc;
+  border-radius: 5px;
+}
+
+.player-info p {
+  text-align: center;
+  width: auto;
+  display: inline-block;
+  margin: auto;
+}
+
+.server_url {
+  display: none;
 }

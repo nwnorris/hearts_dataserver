@@ -43,7 +43,7 @@ function Deck() {
   this.shuffle = function() {
     var i = this.cards.length - 1
     for(i; i > 0; i--){
-      var j = Math.floor(Math.random() * i)
+      var j = Math.floor(Math.random() * i + 1)
       var temp = this.cards[i]
       this.cards[i] = this.cards[j]
       this.cards[j] = temp
@@ -90,6 +90,14 @@ function Hand() {
   this.remove = function(card) {
     var result = this.indexOf(card.num)
     var c = this.cards.splice(result, 1)
+  }
+
+  this.sort = function() {
+    this.cards.sort(function(a, b) {
+      if(a.num < b.num) return -1;
+      if(a.num > b.num) return 1;
+      return 0;
+    })
   }
 }
 
@@ -201,11 +209,15 @@ function Game() {
       this.players[i].hand.clear()
     }
     this.deck.deal(this.players)
+    for(var i = 0; i < this.players.length; i++){
+      this.players[i].hand.sort()
+    }
   }
 
   this.newRound = function() {
     this.rounds.push(new Round())
     this.deck = new Deck()
+    this.deck.shuffle()
     this.deal()
     //Find 2 of clubs
     for(var i = 0; i < this.players.length; i++) {

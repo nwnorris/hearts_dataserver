@@ -19,7 +19,7 @@ var players = []
 var sessions = new Map()
 var activeGame = null
 
-var host = JSON.parse(fs.readFileSync('./host.json', {encoding: 'utf8', flag: 'r'})).host
+var host = JSON.parse(fs.readFileSync('./config.json', {encoding: 'utf8', flag: 'r'})).host
 
 function sendLogMsg(msg) {
   io.emit('game-message', msg);
@@ -70,7 +70,7 @@ var onRoundEnd = function() {
 var trickDone = function(winner) {
   setTimeout(function() {
     io.emit("trick-complete", {'winner': winner})
-  }, 150)
+  }, 1000)
 }
 
 function newGame() {
@@ -89,17 +89,18 @@ function debugPlayers(numPlayers) {
   startGame()
 }
 
-//--SOCKET--//
-io.on('connection', function(socket) {
-
-})
+function newSession() {
+  var session = uuid()
+  sessions[session] = 1
+  return session
+}
 
 //--ROUTES--//
 app.get("/", function(req, res) {
   if(mobile(req)) {
     res.redirect("/game")
   } else {
-    res.render('game_view.ejs')
+    res.render('game_view.ejs', {host: host})
   }
 })
 
@@ -126,20 +127,23 @@ app.post("/game/play", function(req, res) {
 
 app.post("/game/status", function(req, res) {
   console.log("Got status request.")
-  if(req.body.session in sessions) {
+  if(req.body.session in sessions || req.body.game_view == "true") {
     res.status(200).json(activeGame.status())
   } else {
     console.log("Invalid session request.")
     res.status(401).send()
   }
+})
 
+app.get("/game/view/status", function(req, res) {
+  var status = {"mode" : activeGame.status().mode}
+  res.status(200).json(status)
 })
 
 app.post("/game/player", function(req, res) {
   var success = activeGame.addPlayer(req.body.pid)
   var pid = activeGame.players.length - 1
-  var session = uuid();
-  sessions[session] = pid
+  var session = newSession()
   res.status(200).json({valid: success, player: req.body.pid, pid: pid, session: session})
 })
 

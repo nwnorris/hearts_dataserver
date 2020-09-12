@@ -9,12 +9,26 @@
 </head>
 <body>
 	<h1>The Game of Hearts</h1>
-  <p class="player-name" id="p0"></p>
-  <p class="player-name" id="p1"></p>
-  <p class="player-name" id="p2"></p>
-  <p class="player-name" id="p3"></p>
+	<div class="player-info">
+		<p class="pname" id="pname_0"></p>
+		<p class="pscore" id="pscore_0"></p>
+	</div>
+	<div class="player-info">
+		<p class="pname" id="pname_1"></p>
+		<p class="pscore" id="pscore_1"></p>
+	</div>
+	<div class="player-info">
+		<p class="pname" id="pname_2"></p>
+		<p class="pscore" id="pscore_2"></p>
+	</div>
+	<div class="player-info">
+		<p class="pname" id="pname_3"></p>
+		<p class="pscore" id="pscore_3"></p>
+	</div>
+
 	<div class="game_log"></div>
   <div class="card_container"></div>
+	<span class="server_url"><%=host%></span>
   <script src="src/js/game_view.js"></script>
 </body>
 </html>
