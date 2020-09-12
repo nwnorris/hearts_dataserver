@@ -186,7 +186,6 @@ function clearStorage() {
 }
 
 function getStatus() {
-	console.log(SERVER_URL + "/game/view/status")
 	$.ajax({
 		method: "GET",
 		url: SERVER_URL + "/game/view/status",
@@ -194,8 +193,6 @@ function getStatus() {
 			"session" : 3
 		}
 	}).done(function(response) {
-		console.log("done")
-		console.log(response.mode)
 		if(response.mode == "pregame") {
 			clearStorage()
 		}

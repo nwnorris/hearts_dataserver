@@ -27,9 +27,9 @@ function sendLogMsg(msg) {
 
 function playCard(player, cardNum) {
   var card = new game.Card(cardNum)
-  activeGame.playCard(card)
   io.emit('play-card', {card: cardNum, player: activeGame.playerTurn});
-  sendLogMsg(player + " plays " + card.shortName())
+  activeGame.playCard(card)
+  //sendLogMsg(player + " plays " + card.shortName())
   setTimeout(function() {
     sendTurn()
   }, 30)
