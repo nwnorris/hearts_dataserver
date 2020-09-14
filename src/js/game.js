@@ -6,8 +6,12 @@ var session = undefined;
 var offset = -1;
 var suitNames = ["C", "S", "D", "H"]
 var valueNames = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"]
+var playerNames = []
+var cardsToPass = []
 var myTurn = false
+var passTarget = -1
 var hasSelected = false
+var currentMode = undefined;
 var ch = 0
 var cw = 0
 
@@ -41,15 +45,92 @@ function playCard(card) {
 	});
 }
 
+function animateToPassPosition(card, pos) {
+	var holder = $("#pc" + pos)
+	holder.append(card)
+	card.removeClass("selected")
+	card.addClass("pass_card_selection")
+	card.css("width", "")
+	card.css("height", "")
+	card.css("left", "")
+	card.css("transform", "rotate(180deg)")
+}
+
+function addToPass(card) {
+	console.log(card)
+	cardsToPass.push(card)
+	animateToPassPosition(card, cardsToPass.length)
+	if(cardsToPass.length == 3) {
+		$(".pass_submit").removeClass("button_disabled")
+		$(".pass_submit").addClass("button_enabled")
+		$(".pass_submit").addClass("green")
+	}
+}
+
+function removePassedCards() {
+	$(".pass_card_selection").fadeOut()
+	setTimeout(function() {
+		$(".pass_card_selection").remove()
+	}, 1000)
+}
+
+$(".pass_submit").click(function() {
+	if(cardsToPass.length == 3) {
+		var cards = []
+		for(var i = 0; i < cardsToPass.length; i++) {
+			cards.push(cardsToPass[i].attr('id'))
+		}
+		$(this).removeClass("green")
+		$(this).removeClass("button_enabled")
+		$(this).addClass("button_disabled")
+		$(".pass_card_selection").removeClass("enabled")
+		$.ajax({
+			method: 'POST',
+			url: SERVER_URL + "/game/player/pass",
+			data: {
+				pid: pnum,
+				target: passTarget,
+				cards: cards
+			},
+			success: removePassedCards
+		})
+	}
+})
+
+$(".pass_reset").click(function() {
+	cardsToPass = []
+	$(".pass_submit").removeClass("green")
+	$(".pass_submit").removeClass("button_enabled")
+	$(".pass_submit").addClass("button_disabled")
+
+	$(".pass_card_selection").each(function() {
+		$(".card_container").append($(this))
+		$(this).removeClass("pass_card_selection")
+	})
+	layoutCards()
+})
+
 function conditionalSelect() {
-	if($(this).hasClass("enabled") && myTurn){
-		if($(this).hasClass("selected")){
-			playCard($(this))
+	if(currentMode == 'ingame') {
+		//Play card within a round
+		if($(this).hasClass("enabled") && myTurn){
+			if($(this).hasClass("selected")){
+				playCard($(this))
+			} else {
+				$(".selected").removeClass("selected")
+				$(this).addClass("selected")
+			}
+		}
+	} else if (currentMode == 'pass' && cardsToPass.length < 3 && !$(this).hasClass("pass_card_selection")) {
+		//Select card to pass
+		if($(this).hasClass("selected")) {
+			addToPass($(this))
 		} else {
 			$(".selected").removeClass("selected")
 			$(this).addClass("selected")
 		}
 	}
+
 }
 
 function addCard(cardId) {
@@ -62,19 +143,8 @@ function addCard(cardId) {
 	$(".card_container").append(card)
 }
 
-function addCardListener(){
-	$(".card").hover(function() {
-		if(myTurn) {
-			$(this).css("transform", "translateY(-" + ch * 0.4 + "px)")
-		}
-	}, function() {
-		if(myTurn) {
-			$(this).css("transform", "translateY(0px)")
-		}
-	})
-}
-
 function showHand(response) {
+		$(".card").remove()
 		response.forEach(function(card) {
 			addCard(card.num)
 		})
@@ -93,6 +163,19 @@ function layoutCards() {
 	$(".card").css("width", cw + "px")
 	$(".card").css("height", ch + "px")
 
+	//Size pass card holders
+	var passHeight = $(".pass_container_body").height()
+	if(ch > passHeight) {
+		var ratio = (ch - passHeight) / ch
+		var tempch = (1 - ratio) * ch
+		var tempcw = (1 - ratio) * cw
+		$(".pass_card").css("width", tempcw + "px")
+		$(".pass_card").css("height", tempch + "px")
+	} else {
+		$(".pass_card").css("width", cw + "px")
+		$(".pass_card").css("height", ch + "px")
+	}
+
 	var cards = $(".card")
 	var numCards = cards.length
 	var spacePerCard = width / numCards
@@ -107,7 +190,7 @@ function layoutCards() {
 
 function updateCards() {
 	$(".card").removeClass("enabled")
-	if(myTurn) {
+	if(myTurn || currentMode == 'pass') {
 		$.ajax({
 			method: "POST",
 			url: SERVER_URL + "/game/player/playable",
@@ -154,7 +237,7 @@ function collectTrick(trick, pnum) {
 }
 
 function updateTurn(pid) {
-	if(pid == pnum) {
+	if(pid == pnum && currentMode == 'ingame') {
 		myTurn = true
 		$(".turn").css("display", "block")
 	} else {
@@ -167,6 +250,7 @@ function updateTurn(pid) {
 // -- SOCKET -- //
 socket.on('update', (msg) => {
 	update()
+	getStatus()
 })
 
 socket.on('turn', (msg) => {
@@ -183,43 +267,83 @@ socket.on('trick-complete', (msg) => {
 
 socket.on('score-update', (msg) => {
 	console.log(msg)
+	playerNames = []
 	for(var i = 0; i < msg.players.length; i++){
 		var p = msg.players[i]
+		playerNames.push(p.name)
 		$("#pname_" + p.id).text(p.name)
 		$("#pscore_" + p.id).text(p.score)
 	}
+	layoutCards()
+})
+
+socket.on('get-pass', (msg) => {
+	console.log(msg)
+	passTarget = msg.targets[pnum]
+	$(".pass_header").find("p").text("You are passing to: " + playerNames[passTarget])
+	updateState({mode: 'pass'})
+	layoutCards()
 })
 
 // -- END SOCKET -- //
 
+function pass() {
+	$(".entry_form").fadeOut()
+	$(".pass_container").fadeIn()
+	$(".pass_container").css("display", "flex")
+	$(".card_container").fadeIn()
+	$("#pid_text").fadeIn();
+	$(".card").addClass("enabled")
+	if(passTarget == -1) {
+		$.ajax({
+			method : 'POST',
+			url : SERVER_URL + "/game/player/pass/target",
+			data : {
+				pid: pnum
+			},
+			success: function(data) {
+				passTarget = data.target
+				$(".pass_header").find("p").text("You are passing to: " + playerNames[passTarget])
+			}
+		})
+	}
+}
+
 function updateState(gameState) {
-	var mode = gameState.mode
-	if(mode == "pregame") {
+	currentMode = gameState.mode
+	if(gameState.players) {
+		playerNames = []
+		for(var i = 0; i < gameState.players.length; i++) {
+			$("#pname_" + i).text(gameState.players[i])
+			playerNames.push(gameState.players[i])
+		}
+	}
+	if(gameState.score) {
+		for(var i = 0; i < gameState.score.length; i++) {
+			$("#pscore_" + i).text(gameState.score[i])
+		}
+	}
+	if(currentMode == "pregame") {
+		console.log("Mode: pregame")
 		$("#pid_text").fadeOut();
 		$(".entry_form").fadeIn()
 		$(".card_container").fadeOut()
 		$(".score").fadeOut()
-	} else if(mode == "ingame") {
-		console.log("INGAME")
+		$(".pass_container").fadeOut()
+	} else if (currentMode == "pass") {
+		console.log("Mode: pass")
+		pass()
+	} else if(currentMode == "ingame") {
+		console.log("Mode: ingame")
+		$(".pass_container").fadeOut()
 		$("#pid_text").fadeIn();
 		$(".entry_form").fadeOut()
 		$(".card_container").fadeIn()
-
-		if(gameState.players) {
-			for(var i = 0; i < gameState.players.length; i++) {
-				$("#pname_" + i).text(gameState.players[i])
-			}
-		}
-		if(gameState.score) {
-			for(var i = 0; i < gameState.score.length; i++) {
-				$("#pscore_" + i).text(gameState.score[i])
-			}
-		}
 		if(gameState.turn >= 0 && gameState.turn < 4) {
 			updateTurn(gameState.turn)
 		}
 		$(".score").fadeIn()
-	} else if(mode == "postgame") {
+	} else if(currentMode == "postgame") {
 
 	}
 }

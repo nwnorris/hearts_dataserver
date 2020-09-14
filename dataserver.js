@@ -2,7 +2,7 @@ var express = require('express')
 var bp = require('body-parser')
 var path = require('path')
 var fs = require('fs')
-const { uuid } = require('uuidv4')
+var uuid = require('uuid')
 var app = express()
 var http = require('http').createServer(app)
 var port = 5000
@@ -54,9 +54,13 @@ function startGame() {
   activeGame.start();
 }
 
+function sendUpdate() {
+  io.emit("update", "")
+}
+
 var onStart = function() {
   setTimeout(function() {
-    io.emit("update", "")
+    sendUpdate()
     sendScore()
     sendTurn()
   }, 500);
@@ -73,12 +77,35 @@ var trickDone = function(winner) {
   }, 1000)
 }
 
+var getPass = function() {
+  sendUpdate()
+  sendScore()
+  targets = []
+  for(var i = 0; i < 4; i++) {
+    targets.push(activeGame.getPassTarget(i))
+  }
+  setTimeout(function() {
+    io.emit("get-pass", {'targets' : targets})
+  }, 500)
+
+}
+
+var donePassing = function() {
+  var cards = activeGame.getPassedCards()
+  io.emit("recieve-pass", {'cards': cards})
+  setTimeout(function() {
+    activeGame.beginRound()
+  }, 2000)
+}
+
 function newGame() {
   activeGame = new game.Game()
   activeGame.registerOutput(sendLogMsg)
   activeGame.onStart = onStart
   activeGame.onCompleteTrick = trickDone
   activeGame.onRoundEnd = onRoundEnd
+  activeGame.getPass = getPass
+  activeGame.donePassing = donePassing
   activeGame.currentTurn()
 }
 
@@ -90,7 +117,7 @@ function debugPlayers(numPlayers) {
 }
 
 function newSession() {
-  var session = uuid()
+  var session = uuid.v4()
   sessions[session] = 1
   return session
 }
@@ -169,6 +196,25 @@ app.post("/game/player/playable", function(req, res) {
     } else {
       res.status(300).json({})
     }
+})
+
+app.post("/game/player/pass", function(req, res) {
+  console.log("Got pass request from player " + req.body.pid + ", passing to " + req.body.target)
+  var pid = req.body.pid
+  var target = req.body.target
+  var cards = []
+  for (var i = 0; i < req.body.cards.length; i++) {
+    cards.push(new game.Card(req.body.cards[i]))
+  }
+
+  activeGame.recievePassedCards(pid, target, cards)
+  res.status(200)
+})
+
+app.post("/game/player/pass/target", function(req, res) {
+  var target = activeGame.getPassTarget(req.body.pid)
+  console.log("Got pass target request from player " + req.body.pid)
+  res.status(200).json({target: target})
 })
 
 http.listen(port, () => console.log("Server online on port " + port))

@@ -1,7 +1,6 @@
 .card_container {
   width: 100%;
   height: 100vh;
-  border: 1px solid blue;
   position: fixed;
   float: bottom;
   display: none;
@@ -12,7 +11,6 @@
 .card {
   width: 130px;
   height: 198px;
-  border: 1px solid rgba(1, 0, 0, 0.3);
   display: inline-block;
   background-size: contain;
   background-repeat: no-repeat;
@@ -29,4 +27,10 @@
 
 .selected {
   transform: translateY(-10vh);
+}
+
+.pass_card_selection {
+  position: relative;
+  width: 100%;
+  height: 100%;
 }

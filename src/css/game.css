@@ -92,3 +92,74 @@ body {
 .host {
   display: none;
 }
+
+.pass_container {
+  position: fixed;
+  display: none;
+  width: 80vw;
+  height: 35vh;
+  top: 20vh;
+  left: 10vw;
+  flex-direction: column;
+}
+
+.pass_header {
+  width: 100%;
+  height: auto;
+  padding: 10px;
+  margin-bottom: 25px;
+}
+
+.pass_header p {
+  width: 100%;
+}
+
+.pass_container_body {
+  height: 90%;
+  display: flex;
+  justify-content: space-around;
+  align-content: center;
+}
+
+.pass_card {
+  height: 100%;
+  width: 100px;
+  box-shadow: 0 0 20px #ccc;
+  border-radius: 15px;
+}
+
+.pass_options {
+  height: 100%;
+  width: 15%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.pass_options div {
+  height: 30%;
+  width: 100%;
+  display: flex;
+  border-radius: 5px;
+  justify-content: center;
+}
+
+.pass_options p {
+  align-self: center;
+  text-align: center;
+}
+
+.button_enabled {
+  border: 1px solid #999;
+  box-shadow: 0 0 15px #999;
+}
+
+.button_disabled {
+  border: 1px solid #ddd;
+  box-shadow: 0 0 5px #ccc;
+}
+
+.green {
+  border: 1px solid #81d494;
+  box-shadow: 0 0 10px #81d494
+}

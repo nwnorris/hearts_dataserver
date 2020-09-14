@@ -69,24 +69,35 @@ function Hand() {
   this.addCard = function(card) {
     this.cards.push(card)
   }
+
+  this.addMultiple = function(cards) {
+    for(var i = 0; i < cards.length; i++) {
+      this.cards.push(cards[i])
+    }
+  }
+
   this.toString = function() {
     return "Hand with " + this.cards.length + " cards in it."
   }
+
   this.contains = function(id) {
     for(var i = 0; i < this.cards.length; i++) {
       if(this.cards[i].num == id) return true
     }
     return false
   }
+
   this.indexOf = function(id) {
     for(var i = 0; i < this.cards.length; i++) {
       if(this.cards[i].num == id) return i
     }
     return -1
   }
+
   this.clear = function() {
     this.cards = []
   }
+
   this.remove = function(card) {
     var result = this.indexOf(card.num)
     var c = this.cards.splice(result, 1)
@@ -114,6 +125,8 @@ function Player(id, name) {
   this.remove = function(card) {
     this.hand.remove(card)
   }
+  this.passedCards = false
+  this.recievedPass = false
 }
 
 function Play(player, card) {
@@ -171,10 +184,15 @@ function Game() {
   this.playerTurn = 0
   this.activeTrick = new Trick()
   this.numPlayers = 4
+  this.passedCards = new Map()
+  //Null values are functions that must be registered by the software using this API
   this.output = null
   this.onStart = null
+  this.getPass = null
   this.onCompleteTrick = null
   this.onRoundEnd = null
+  this.donePassing = null
+  this.passType = -1
   this.log = function(msg) {
     if(output != null) {
       output(msg)
@@ -214,12 +232,59 @@ function Game() {
     }
   }
 
-  this.newRound = function() {
-    this.rounds.push(new Round())
-    this.deck = new Deck()
-    this.deck.shuffle()
-    this.deal()
+  this.getPassedCards = function() {
+    var out = []
+    for (var i = 0; i < 4; i++) {
+      out.push(this.passedCards[i])
+    }
+    return out
+  }
+
+  this.getPassTarget = function(pid) {
+    switch(this.passType){
+      case 0:
+        //Left
+        return (pid + 1) % 4
+        break;
+      case 1:
+        //Right
+        return (pid + 3) % 4
+        break;
+      case 2:
+        //Across
+        return (pid + 2) % 4
+      case 4:
+        //No pass
+        return -1
+    }
+  }
+
+  this.recievePassedCards = function(pidGiver, pidTarget, cards) {
+    this.players[pidGiver].passedCards = true
+    this.players[pidTarget].recievedPass = true
+    for(var i = 0; i < cards.length; i++) {
+      this.players[pidGiver].remove(cards[i])
+      this.players[pidTarget].hand.addCard(cards[i])
+    }
+    this.passedCards[pidTarget] = cards
+    success = true
+    for(var i = 0; i < this.players.length; i++) {
+      if(!this.players[i].passedCards || !this.players[i].recievedPass) {
+        success = false
+      }
+    }
+
+    if(success) {
+      for(var i = 0; i < this.players.length; i++) {
+        this.players[i].hand.sort()
+      }
+      setTimeout(this.donePassing, 500)
+    }
+  }
+
+  this.beginRound = function() {
     //Find 2 of clubs
+    this.mode = 'ingame';
     for(var i = 0; i < this.players.length; i++) {
       if(this.players[i].hand.contains(0)) { // 2 of clubs
         this.playerTurn = i
@@ -228,6 +293,17 @@ function Game() {
       }
     }
     this.currentTurn()
+    this.onStart()
+  }
+
+  this.newRound = function() {
+    this.rounds.push(new Round())
+    this.deck = new Deck()
+    this.deck.shuffle()
+    this.deal()
+    this.passType = (this.passType + 1) % 3
+    this.mode = 'pass'
+    this.getPass()
   }
 
   this.registerOutput = function(callback) {
@@ -269,11 +345,7 @@ function Game() {
 
   this.start = function() {
     output("Game is beginning!")
-    this.mode = 'ingame';
     this.newRound();
-    if(this.onStart != null) {
-      this.onStart()
-    }
   }
 
   this.playCard = function(card) {
@@ -281,7 +353,6 @@ function Game() {
     console.log(this.playerTurn + " plays " + card)
     this.activeTrick.makePlay(this.playerTurn, card)
     this.players[this.playerTurn].remove(card)
-    console.log("Player " + this.playerTurn + " now has " + this.players[this.playerTurn].hand.cards.length + " cards in hand.")
     this.nextPlayerTurn()
 
     if(this.activeTrick.completed()) {
@@ -317,47 +388,52 @@ function Game() {
       var round = this.rounds[this.rounds.length - 1]
       var trick = this.activeTrick
       var playable = []
-      //Check if this player is on the lead
-      if(trick.playedCards.length == 0 && player.id == this.playerTurn) {
-        //Must play 2 of clubs on first lead of round
-        if(round.tricks.length == 0) {
-          var clubIndex = player.hasCard(0)
-          if(clubIndex >= 0) {
-            playable.push(player.getCard(clubIndex))
-          }
-        } else {
-          //Not first round, can lead any suit (excluding hearts if points aren't broken)
-          if(round.pointsBroken) {
-            playable = player.hand.cards
+      if(this.mode == 'ingame') {
+        //Check if this player is on the lead
+        if(trick.playedCards.length == 0 && player.id == this.playerTurn) {
+          //Must play 2 of clubs on first lead of round
+          if(round.tricks.length == 0) {
+            var clubIndex = player.hasCard(0)
+            if(clubIndex >= 0) {
+              playable.push(player.getCard(clubIndex))
+            }
           } else {
-            for(var i = 0; i < player.hand.cards.length; i++) {
-              var card = player.hand.cards[i]
-              if(card.suit < 3) {
-                playable.push(card)
+            //Not first round, can lead any suit (excluding hearts if points aren't broken)
+            if(round.pointsBroken) {
+              playable = player.hand.cards
+            } else {
+              for(var i = 0; i < player.hand.cards.length; i++) {
+                var card = player.hand.cards[i]
+                if(card.suit < 3) {
+                  playable.push(card)
+                }
+              }
+              //If all player has is hearts, can lead them.
+              if(playable.length == 0) {
+                playable = player.hand.cards;
               }
             }
-            //If all player has is hearts, can lead them.
-            if(playable.length == 0) {
-              playable = player.hand.cards;
+
+          }
+        } else {
+          //Not on the lead -- must follow lead suit if possible
+          var hasPlay = false
+          for(var i = 0; i < player.hand.cards.length; i++) {
+            var card = player.hand.cards[i]
+            if(card.suit == trick.leadSuit) {
+              playable.push(card)
+              hasPlay = true
             }
           }
-
-        }
-      } else {
-        //Not on the lead -- must follow lead suit if possible
-        var hasPlay = false
-        for(var i = 0; i < player.hand.cards.length; i++) {
-          var card = player.hand.cards[i]
-          if(card.suit == trick.leadSuit) {
-            playable.push(card)
-            hasPlay = true
+          if(!hasPlay) {
+            console.log("No cards of lead suit. Offsuit play allowed!")
+            playable = player.hand.cards
           }
         }
-        if(!hasPlay) {
-          console.log("No cards of lead suit. Offsuit play allowed!")
-          playable = player.hand.cards
-        }
+      } else if (this.mode == 'pass') {
+        playable = player.hand.cards;
       }
+
 
       return playable
   }
