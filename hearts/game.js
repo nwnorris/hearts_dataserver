@@ -202,7 +202,7 @@ function Game() {
   this.onRoundEnd = null
   this.donePassing = null
   this.onMoon = null
-  this.passType = 2
+  this.passType = -1
   this.log = function(msg) {
     if(output != null) {
       output(msg)
@@ -322,7 +322,7 @@ function Game() {
     this.deck = new Deck()
     this.deck.shuffle()
     this.deal()
-    this.testMoon()
+    //this.testMoon()
     this.passType = (this.passType + 1) % 4
     if(this.passType == 3) {
       //Skip pass phase, no pass.
