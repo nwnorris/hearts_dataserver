@@ -285,10 +285,19 @@ socket.on('get-pass', (msg) => {
 	layoutCards()
 })
 
+socket.on('moon', (msg) => {
+	console.log(msg)
+	if(msg.pid == pnum) {
+		updateState({mode: 'moon'})
+	} 
+})
+
 // -- END SOCKET -- //
 
-function pass() {
+function pass(gameState) {
+	console.log("Mode: pass")
 	$(".entry_form").fadeOut()
+	$(".moon_container").fadeOut()
 	$(".pass_container").fadeIn()
 	$(".pass_container").css("display", "flex")
 	$(".card_container").fadeIn()
@@ -309,6 +318,36 @@ function pass() {
 	}
 }
 
+function pregame(gameState) {
+	console.log("Mode: pregame")
+	$("#pid_text").fadeOut();
+	$(".entry_form").fadeIn()
+	$(".card_container").fadeOut()
+	$(".score").fadeOut()
+	$(".pass_container").fadeOut()
+	$(".moon_container").fadeOut()
+}
+
+function ingame(gameState) {
+	console.log("Mode: ingame")
+	$(".pass_container").fadeOut()
+	$("#pid_text").fadeIn();
+	$(".entry_form").fadeOut()
+	$(".card_container").fadeIn()
+	$(".moon_container").fadeOut()
+	if(gameState.turn >= 0 && gameState.turn < 4) {
+		updateTurn(gameState.turn)
+	}
+	$(".score").fadeIn()
+}
+
+function moon(gameState) {
+	console.log("Mode: moon")
+	$(".card_container").fadeOut()
+	$(".pass_container").fadeOut()
+	$(".moon_container").fadeIn()
+}
+
 function updateState(gameState) {
 	currentMode = gameState.mode
 	if(gameState.players) {
@@ -324,25 +363,13 @@ function updateState(gameState) {
 		}
 	}
 	if(currentMode == "pregame") {
-		console.log("Mode: pregame")
-		$("#pid_text").fadeOut();
-		$(".entry_form").fadeIn()
-		$(".card_container").fadeOut()
-		$(".score").fadeOut()
-		$(".pass_container").fadeOut()
+		pregame(gameState)
 	} else if (currentMode == "pass") {
-		console.log("Mode: pass")
-		pass()
+		pass(gameState)
 	} else if(currentMode == "ingame") {
-		console.log("Mode: ingame")
-		$(".pass_container").fadeOut()
-		$("#pid_text").fadeIn();
-		$(".entry_form").fadeOut()
-		$(".card_container").fadeIn()
-		if(gameState.turn >= 0 && gameState.turn < 4) {
-			updateTurn(gameState.turn)
-		}
-		$(".score").fadeIn()
+		ingame(gameState)
+	} else if(currentMode == "moon") {
+		moon(gameState)
 	} else if(currentMode == "postgame") {
 
 	}
@@ -390,6 +417,23 @@ $(".submit").click(function() {
 		}
 
 	})
+})
+
+$(".moon_option").click(function() {
+	var choice = $(this).attr('id')
+	if(choice == "add" || choice == "subtract") {
+		$.ajax({
+			method: 'POST',
+			url: SERVER_URL + "/game/player/moon",
+			data: {
+				pid: pnum,
+				moonChoice: choice
+			},
+			success: function() {
+				updateState({mode: 'ingame'})
+			}
+		})
+	}
 })
 
 function getStatus() {

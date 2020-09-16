@@ -163,3 +163,32 @@ body {
   border: 1px solid #81d494;
   box-shadow: 0 0 10px #81d494
 }
+
+.moon_container {
+  width: 50vw;
+  height: auto;
+  box-shadow: 0 0 5px #ccc;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  margin: auto;
+  padding: 15px;
+  display: flex;
+  justify-content: space-around;
+  align-content: center;
+  margin-top: 25vh;
+}
+
+.moon_container h2 {
+  width: 100%;
+}
+
+.moon_option {
+  display: flex;
+  width: 45%;
+  height: auto;
+  padding: 10px;
+  border: 1px solid #999;
+  box-shadow: 0 0 10px #999;
+  align-content: center;
+  margin-left: 15px;
+}

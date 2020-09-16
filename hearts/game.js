@@ -163,6 +163,7 @@ function Round() {
   this.tricks = []
   this.playerPoints = [0, 0, 0, 0]
   this.pointsBroken = false
+  this.moon = false
   this.addTrick = function(trick) {
     this.playerPoints[trick.winner.player] += trick.points
     this.tricks.push(trick)
@@ -170,6 +171,14 @@ function Round() {
       this.pointsBroken = true
       console.log("[ALERT] Points have been broken!")
     }
+  }
+  this.moonPlayer = function() {
+    for(var i = 0; i < this.playerPoints.length; i++) {
+      if(this.playerPoints[i] == 26) {
+        return i
+      }
+    }
+    return -1
   }
   this.size = function() {
     return this.tricks.length
@@ -192,7 +201,8 @@ function Game() {
   this.onCompleteTrick = null
   this.onRoundEnd = null
   this.donePassing = null
-  this.passType = -1
+  this.onMoon = null
+  this.passType = 2
   this.log = function(msg) {
     if(output != null) {
       output(msg)
@@ -296,14 +306,33 @@ function Game() {
     this.onStart()
   }
 
+  this.testMoon = function() {
+    suit = 0
+    for (var i = 0; i < this.players.length; i++) {
+      this.players[i].hand.cards = []
+      for(var j = 0; j < 13; j++) {
+        this.players[i].hand.addCard(new Card(13 * i + j))
+      }
+      suit++;
+    }
+  }
+
   this.newRound = function() {
     this.rounds.push(new Round())
     this.deck = new Deck()
     this.deck.shuffle()
     this.deal()
-    this.passType = (this.passType + 1) % 3
-    this.mode = 'pass'
-    this.getPass()
+    this.testMoon()
+    this.passType = (this.passType + 1) % 4
+    if(this.passType == 3) {
+      //Skip pass phase, no pass.
+      this.beginRound()
+    } else {
+      //Left/right/across pass
+      this.mode = 'pass'
+      this.getPass()
+    }
+
   }
 
   this.registerOutput = function(callback) {
@@ -348,6 +377,53 @@ function Game() {
     this.newRound();
   }
 
+  this.moonDecision = function(pid, choice) {
+    var round = this.rounds[this.rounds.length - 1]
+    var mooner = round.moonPlayer()
+    if(pid != mooner) {
+      this.finishTrick()
+    } else {
+      //Valid moon
+      if(choice == "add") {
+        for(var i = 0; i < round.playerPoints.length; i++) {
+          if(i != pid) {
+            round.playerPoints[i] = 26
+          }
+        }
+        round.playerPoints[pid] = 0
+      } else if (choice == "subtract") {
+        for(var i = 0; i < round.playerPoints.length; i++) {
+          if(i != pid) {
+            round.playerPoints[i] = 0
+          }
+        }
+        round.playerPoints[pid] = -26
+      }
+
+      this.finishTrick()
+    }
+  }
+
+  this.finishTrick = function() {
+    var round = this.rounds[this.rounds.length - 1]
+    this.onCompleteTrick(this.activeTrick.winner.player)
+    this.playerTurn = this.activeTrick.winner.player
+    this.activeTrick = new Trick()
+    output("Completed trick " + round.size() + "/" + this.tricksPerRound)
+    output("Player " + this.playerTurn + " is on the lead.")
+
+    if(round.size() == this.tricksPerRound) {
+      //End of round
+      for(var i = 0; i < this.numPlayers; i++) {
+        this.score[i] += round.playerPoints[i]
+      }
+      if(this.onRoundEnd){
+        this.onRoundEnd()
+      }
+      this.newRound()
+    }
+  }
+
   this.playCard = function(card) {
     output(this.playerTurn + " plays " + card)
     console.log(this.playerTurn + " plays " + card)
@@ -358,25 +434,11 @@ function Game() {
     if(this.activeTrick.completed()) {
       var round = this.currentRound()
       round.addTrick(this.activeTrick)
-      this.onCompleteTrick(this.activeTrick.winner.player)
-      this.playerTurn = this.activeTrick.winner.player
-      this.activeTrick = new Trick()
-      output("Completed trick " + round.size() + "/" + this.tricksPerRound)
-      output("Player " + this.playerTurn + " is on the lead.")
-
-      if(round.size() == this.tricksPerRound) {
-        //End of round
-        for(var i = 0; i < this.numPlayers; i++) {
-          this.score[i] += round.playerPoints[i]
-        }
-        if(this.onRoundEnd){
-          this.onRoundEnd()
-        }
-        this.newRound()
-        output("End of round. Points stand thusly:")
-        for(var i = 0; i < this.numPlayers; i++) {
-          output("Player " + i + ": " + this.score[i])
-        }
+      var didMoon = this.rounds[this.rounds.length - 1].moonPlayer()
+      if(didMoon >= 0) {
+        this.onMoon(didMoon)
+      } else {
+        this.finishTrick()
       }
     }
 
@@ -426,7 +488,7 @@ function Game() {
             }
           }
           if(!hasPlay) {
-            console.log("No cards of lead suit. Offsuit play allowed!")
+            //No suit of lead -- can play offsuit.
             playable = player.hand.cards
           }
         }

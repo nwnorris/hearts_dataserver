@@ -90,6 +90,12 @@ var getPass = function() {
 
 }
 
+var didMoon = function(pid) {
+  setTimeout(function() {
+    io.emit("moon", {'pid' : pid})
+  }, 500);
+}
+
 var donePassing = function() {
   var cards = activeGame.getPassedCards()
   io.emit("recieve-pass", {'cards': cards})
@@ -106,6 +112,7 @@ function newGame() {
   activeGame.onRoundEnd = onRoundEnd
   activeGame.getPass = getPass
   activeGame.donePassing = donePassing
+  activeGame.onMoon = didMoon
   activeGame.currentTurn()
 }
 
@@ -215,6 +222,12 @@ app.post("/game/player/pass/target", function(req, res) {
   var target = activeGame.getPassTarget(req.body.pid)
   console.log("Got pass target request from player " + req.body.pid)
   res.status(200).json({target: target})
+})
+
+app.post("/game/player/moon", function(req, res) {
+  var choice = req.body.moonChoice;
+  res.status(200)
+  activeGame.moonDecision(req.body.pid, choice)
 })
 
 http.listen(port, () => console.log("Server online on port " + port))
