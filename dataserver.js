@@ -131,11 +131,12 @@ function newSession() {
 
 //--ROUTES--//
 app.get("/", function(req, res) {
-  if(mobile(req)) {
-    res.redirect("/game")
-  } else {
-    res.render('game_view.ejs', {host: host})
-  }
+  res.render('game.ejs', {host: host})
+  // if(mobile(req)) {
+  //   res.render('game.ejs', {host: host})
+  // } else {
+  //   res.redirect("/game")
+  // }
 })
 
 app.post("/game/new", function(req, res) {
@@ -144,7 +145,7 @@ app.post("/game/new", function(req, res) {
 })
 
 app.get("/game", function(req, res) {
-  res.render('game.ejs', {host: host})
+  res.render('game_view.ejs', {host: host})
 })
 
 app.post("/game/play", function(req, res) {
