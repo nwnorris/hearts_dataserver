@@ -54,23 +54,34 @@ body {
   display: none;
 }
 
+.header {
+  position: fixed;
+  width: 50vw;
+  height: auto;
+}
+
+.header h1 {
+  font-size: 1.2em;
+  display: inline;
+}
+
+.header h3 {
+  font-size: 1em;
+  font-style: italic;
+}
+
 .turn {
-  color: red;
-  font-size: 2em;
+  color: white;
+  font-size: 4em;
   display: none;
 }
 
-.header {
-  position: fixed;
-  width: 100vw;
-  height: 5vh;
-}
 
 .score {
   position: fixed;
-  width: 20vw;
+  width: auto;
   height: auto;
-  top: 0;
+  top: 2vh;
   right: 5vw;
   display: flex;
   justify-content: space-around;
@@ -86,7 +97,7 @@ body {
 }
 
 .score ul li {
-  text-align: center;
+  text-align: right;
 }
 
 .host {
@@ -97,17 +108,18 @@ body {
   position: fixed;
   display: none;
   width: 80vw;
-  height: 35vh;
-  top: 20vh;
+  height: 45vh;
+  top: 5vh;
   left: 10vw;
   flex-direction: column;
 }
 
 .pass_header {
-  width: 100%;
+  width: auto;
+  margin: auto;
   height: auto;
   padding: 10px;
-  margin-bottom: 25px;
+  margin-bottom: 5px;
 }
 
 .pass_header p {

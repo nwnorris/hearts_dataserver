@@ -157,7 +157,7 @@ function layoutCards() {
 	var width = $(".card_container").width() * 0.9
 	var padding = $(".card_container").width() * 0.1
 
-	ch = $(".card_container").height() * 0.4
+	ch = $(".card_container").height() * 0.5
 	cw = ch / 1.523 // Card size ratio
 
 	$(".card").css("width", cw + "px")
@@ -239,10 +239,10 @@ function collectTrick(trick, pnum) {
 function updateTurn(pid) {
 	if(pid == pnum && currentMode == 'ingame') {
 		myTurn = true
-		$(".turn").css("display", "block")
+		$(".turn").css("color", "red")
 	} else {
 		myTurn = false
-		$(".turn").css("display", "none")
+		$(".turn").css("color", "white")
 	}
 	updateCards()
 }
@@ -280,6 +280,7 @@ socket.on('score-update', (msg) => {
 socket.on('get-pass', (msg) => {
 	console.log(msg)
 	passTarget = msg.targets[pnum]
+	cardsToPass = []
 	$(".pass_header").find("p").text("You are passing to: " + playerNames[passTarget])
 	updateState({mode: 'pass'})
 	layoutCards()
@@ -289,7 +290,7 @@ socket.on('moon', (msg) => {
 	console.log(msg)
 	if(msg.pid == pnum) {
 		updateState({mode: 'moon'})
-	} 
+	}
 })
 
 // -- END SOCKET -- //
@@ -326,10 +327,12 @@ function pregame(gameState) {
 	$(".score").fadeOut()
 	$(".pass_container").fadeOut()
 	$(".moon_container").fadeOut()
+	$(".turn").css("display", "none")
 }
 
 function ingame(gameState) {
 	console.log("Mode: ingame")
+	$(".turn").fadeIn()
 	$(".pass_container").fadeOut()
 	$("#pid_text").fadeIn();
 	$(".entry_form").fadeOut()
@@ -343,6 +346,7 @@ function ingame(gameState) {
 
 function moon(gameState) {
 	console.log("Mode: moon")
+	$(".turn").fadeOut()
 	$(".card_container").fadeOut()
 	$(".pass_container").fadeOut()
 	$(".moon_container").fadeIn()

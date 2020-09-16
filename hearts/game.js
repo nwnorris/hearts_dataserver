@@ -304,6 +304,11 @@ function Game() {
     }
     this.currentTurn()
     this.onStart()
+
+    for(var i = 0; i < this.players.length; i++) {
+      this.players[i].passedCards = false
+      this.players[i].recievedPass = false
+    }
   }
 
   this.testMoon = function() {
