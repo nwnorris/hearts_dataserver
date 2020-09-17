@@ -1,5 +1,6 @@
 var suitNames = ["clubs", "spades", "diamonds", "hearts"]
 var valueNames = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"]
+var fs = require('fs')
 
 function Card(num) {
     this.suit = Math.floor(num / 13)
@@ -137,6 +138,7 @@ function Play(player, card) {
 function Trick() {
   this.points = 0
   this.playedCards = []
+  this.suitCounts = [0, 0, 0, 0]
   this.winner = undefined
   this.leadSuit = undefined
   this.containsHearts = false
@@ -153,6 +155,7 @@ function Trick() {
     if(card.suit == 3) {
       this.containsHearts = true
     }
+    this.suitCounts[card.suit] += 1
   }
   this.completed = function() {
     return this.playedCards.length == 4 ? true : false
@@ -162,6 +165,7 @@ function Trick() {
 function Round() {
   this.tricks = []
   this.playerPoints = [0, 0, 0, 0]
+  this.cardCounts = [0, 0, 0, 0]
   this.pointsBroken = false
   this.moon = false
   this.addTrick = function(trick) {
@@ -170,6 +174,9 @@ function Round() {
     if(!this.pointsBroken && trick.containsHearts) {
       this.pointsBroken = true
       console.log("[ALERT] Points have been broken!")
+    }
+    for (var i = 0; i < trick.suitCounts.length; i++) {
+      this.cardCounts[i] += trick.suitCounts[i]
     }
   }
   this.moonPlayer = function() {
@@ -190,6 +197,7 @@ function Game() {
   this.rounds = []
   this.score = [0, 0, 0, 0]
   this.deck = new Deck()
+  this.filename = "games/hearts_game_" + Date.now()
   this.playerTurn = 0
   this.activeTrick = new Trick()
   this.numPlayers = 4
@@ -203,6 +211,7 @@ function Game() {
   this.donePassing = null
   this.onMoon = null
   this.passType = -1
+  this.writeCache = []
   this.log = function(msg) {
     if(output != null) {
       output(msg)
@@ -323,6 +332,7 @@ function Game() {
   }
 
   this.newRound = function() {
+    this.csvWrite()
     this.rounds.push(new Round())
     this.deck = new Deck()
     this.deck.shuffle()
@@ -431,6 +441,7 @@ function Game() {
 
   this.playCard = function(card) {
     output(this.playerTurn + " plays " + card)
+    this.writeAction(card.num)
     console.log(this.playerTurn + " plays " + card)
     this.activeTrick.makePlay(this.playerTurn, card)
     this.players[this.playerTurn].remove(card)
@@ -503,6 +514,58 @@ function Game() {
 
 
       return playable
+  }
+
+  this.csvWrite = function() {
+    if(this.writeCache.length > 0) {
+      var data = this.writeCache.join("\n")
+      var name = this.filename + "_" + this.rounds.length + ".csv"
+      fs.writeFile(name, data, err => {
+        if (err) {
+          console.log("Unable to save to .csv", err)
+        } else {
+          console.log('Saved cache to ' + name)
+          this.writeCache = []
+        }
+      })
+    }
+  }
+
+  this.writeAction = function(cardNum) {
+    var row = []
+    var player = this.players[this.playerTurn]
+    //Columns 0 thru 12, the player's hand
+    for (var i = 0; i < 13; i++) {
+      if(i < player.hand.cards.length) {
+        row.push(player.hand.cards[i].num)
+      } else {
+        row.push(-1)
+      }
+    }
+
+    //Columns 13 thru 18, player card played + player score
+    for (var i = 0; i < 3; i++) {
+      if(i < this.activeTrick.playedCards.length) {
+        var play = this.activeTrick.playedCards[i]
+        row.push(play.card.num)
+        row.push(this.score[play.player])
+      } else {
+        row.push(-1)
+        row.push(-1)
+      }
+    }
+
+    //Current suit counts
+    for (var i = 0; i < 4; i++) {
+      row.push(this.rounds[this.rounds.length - 1].cardCounts[i])
+    }
+
+    //Player score and card played
+    row.push(this.score[this.playerTurn])
+    row.push(cardNum)
+
+    out = row.join(',')
+    this.writeCache.push(out)
   }
 
 }
