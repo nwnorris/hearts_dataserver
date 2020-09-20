@@ -175,9 +175,6 @@ function Round() {
       this.pointsBroken = true
       console.log("[ALERT] Points have been broken!")
     }
-    for (var i = 0; i < trick.suitCounts.length; i++) {
-      this.cardCounts[i] += trick.suitCounts[i]
-    }
   }
   this.moonPlayer = function() {
     for(var i = 0; i < this.playerPoints.length; i++) {
@@ -466,11 +463,18 @@ function Game() {
     return !(card.num in this.roundPlayedCards)
   }
 
+  this.activeRound = function() {
+    return this.rounds[this.rounds.length - 1]
+  }
+
   this.playCard = function(card) {
     output(this.playerTurn + " plays " + card)
     this.writeAction(card.num)
     console.log(this.playerTurn + " plays " + card)
+
+    this.activeRound().cardCounts[card.suit] += 1
     this.activeTrick.makePlay(this.playerTurn, card)
+    this.rounds[this.rounds.length - 1]
     this.players[this.playerTurn].remove(card)
     this.roundPlayedCards[card.num] = 1
     this.nextPlayerTurn()
