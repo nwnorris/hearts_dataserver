@@ -203,7 +203,7 @@ function Game() {
   this.roundPlayedCards = new Map()
   this.debugMoon = false
   this.tricksPerRound = 13
-  this.maxScore = 15
+  this.maxScore = 100
   if(this.debugMoon) {
     this.passType = 2
   }
