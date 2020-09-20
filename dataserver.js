@@ -27,12 +27,14 @@ function sendLogMsg(msg) {
 
 function playCard(player, cardNum) {
   var card = new game.Card(cardNum)
-  io.emit('play-card', {card: cardNum, player: activeGame.playerTurn});
-  activeGame.playCard(card)
-  //sendLogMsg(player + " plays " + card.shortName())
-  setTimeout(function() {
-    sendTurn()
-  }, 30)
+  if(activeGame.canPlayCard(card)) {
+    io.emit('play-card', {card: cardNum, player: activeGame.playerTurn});
+    activeGame.playCard(card)
+    //sendLogMsg(player + " plays " + card.shortName())
+    setTimeout(function() {
+      sendTurn()
+    }, 30)
+  }
 }
 
 function sendTurn() {

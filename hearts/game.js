@@ -199,9 +199,12 @@ function Game() {
   this.deck = new Deck()
   this.filename = "games/hearts_game_" + Date.now()
   this.playerTurn = 0
+  this.passType = -1
   this.activeTrick = new Trick()
   this.numPlayers = 4
   this.passedCards = new Map()
+  this.roundPlayedCards = new Map()
+
   //Null values are functions that must be registered by the software using this API
   this.output = null
   this.onStart = null
@@ -210,8 +213,13 @@ function Game() {
   this.onRoundEnd = null
   this.donePassing = null
   this.onMoon = null
-  this.passType = -1
+
+
+  //Caches for incremental logging to CSV
   this.writeCache = []
+  this.passCache = []
+
+
   this.log = function(msg) {
     if(output != null) {
       output(msg)
@@ -278,25 +286,40 @@ function Game() {
     }
   }
 
+  this.sortPlayers = function() {
+    this.players.forEach(function(p) {
+      p.hand.sort()
+    })
+  }
+
+  //Once all players have passed their cards, we actually perform the pass
+  this.executePass = function() {
+    for(var i = 0; i < this.players.length; i++) {
+      var pidTarget = this.getPassTarget(i)
+      var cards = this.passedCards[i]
+      for(var j = 0; j < cards.length; j++) {
+        this.players[i].remove(cards[j])
+        this.players[pidTarget].hand.addCard(cards[j])
+      }
+    }
+  }
+
   this.recievePassedCards = function(pidGiver, pidTarget, cards) {
     this.players[pidGiver].passedCards = true
-    this.players[pidTarget].recievedPass = true
-    for(var i = 0; i < cards.length; i++) {
-      this.players[pidGiver].remove(cards[i])
-      this.players[pidTarget].hand.addCard(cards[i])
-    }
-    this.passedCards[pidTarget] = cards
+    this.passedCards[pidGiver] = cards
+    this.writePass(pidGiver, cards)
+
     success = true
     for(var i = 0; i < this.players.length; i++) {
-      if(!this.players[i].passedCards || !this.players[i].recievedPass) {
+      if(!this.players[i].passedCards) {
         success = false
       }
     }
 
     if(success) {
-      for(var i = 0; i < this.players.length; i++) {
-        this.players[i].hand.sort()
-      }
+      this.executePass()
+      this.sortPlayers()
+      this.csvWritePass()
       setTimeout(this.donePassing, 500)
     }
   }
@@ -337,6 +360,7 @@ function Game() {
     this.deck = new Deck()
     this.deck.shuffle()
     this.deal()
+    this.roundPlayedCards = new Map()
     //this.testMoon()
     this.passType = (this.passType + 1) % 4
     if(this.passType == 3) {
@@ -384,7 +408,6 @@ function Game() {
     }
 
     return success;
-
   }
 
   this.start = function() {
@@ -439,12 +462,17 @@ function Game() {
     }
   }
 
+  this.canPlayCard = function(card) {
+    return !(card.num in this.roundPlayedCards)
+  }
+
   this.playCard = function(card) {
     output(this.playerTurn + " plays " + card)
     this.writeAction(card.num)
     console.log(this.playerTurn + " plays " + card)
     this.activeTrick.makePlay(this.playerTurn, card)
     this.players[this.playerTurn].remove(card)
+    this.roundPlayedCards[card.num] = 1
     this.nextPlayerTurn()
 
     if(this.activeTrick.completed()) {
@@ -524,11 +552,39 @@ function Game() {
         if (err) {
           console.log("Unable to save to .csv", err)
         } else {
-          console.log('Saved cache to ' + name)
+          console.log('Saved actions to ' + name)
           this.writeCache = []
         }
       })
     }
+  }
+
+  this.csvWritePass = function() {
+    if(this.passCache.length > 0) {
+      var data = this.passCache.join("\n")
+      var name = this.filename + "_" + this.rounds.length + "_pass" + ".csv"
+      fs.writeFile(name, data, err => {
+        if (err) {
+          console.log("Unable to save to .csv", err)
+        } else {
+          console.log('Saved passes to ' + name)
+          this.passCache = []
+        }
+      })
+    }
+  }
+
+  this.writePass = function(pidGiver, cards) {
+    var row = []
+    var playerHand = this.players[pidGiver].hand.cards
+    playerHand.forEach(function(card) {
+      row.push(card.num)
+    })
+    cards.forEach(function(card) {
+      row.push(card.num)
+    })
+
+    this.passCache.push(row.join(','))
   }
 
   this.writeAction = function(cardNum) {
