@@ -154,7 +154,6 @@ app.post("/game/play", function(req, res) {
   var player = parseInt(req.body.player);
   var card = parseInt(req.body.card);
   if(card >= 0 && card < 52) {
-    console.log("Recieved post to /game/play for card: " + card)
     playCard(player, card)
   } else {
     console.log("Error processing play request from player " + player + " for card: " + card)

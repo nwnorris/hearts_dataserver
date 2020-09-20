@@ -201,6 +201,11 @@ function Game() {
   this.numPlayers = 4
   this.passedCards = new Map()
   this.roundPlayedCards = new Map()
+  this.debugMoon = false
+  this.tricksPerRound = 13
+  if(this.debugMoon) {
+    this.passType = 2
+  }
 
   //Null values are functions that must be registered by the software using this API
   this.output = null
@@ -358,7 +363,9 @@ function Game() {
     this.deck.shuffle()
     this.deal()
     this.roundPlayedCards = new Map()
-    //this.testMoon()
+    if(this.debugMoon) {
+      this.testMoon()
+    }
     this.passType = (this.passType + 1) % 4
     if(this.passType == 3) {
       //Skip pass phase, no pass.
@@ -416,7 +423,7 @@ function Game() {
     var round = this.rounds[this.rounds.length - 1]
     var mooner = round.moonPlayer()
     if(pid != mooner) {
-      this.finishTrick()
+      this.endRound()
     } else {
       //Valid moon
       if(choice == "add") {
@@ -435,8 +442,20 @@ function Game() {
         round.playerPoints[pid] = -26
       }
 
-      this.finishTrick()
+      this.endRound()
     }
+  }
+
+  this.endRound = function() {
+    //Add points and call hook function
+    var round = this.activeRound()
+    for(var i = 0; i < this.numPlayers; i++) {
+      this.score[i] += round.playerPoints[i]
+    }
+    if(this.onRoundEnd){
+      this.onRoundEnd()
+    }
+    this.newRound()
   }
 
   this.finishTrick = function() {
@@ -446,16 +465,13 @@ function Game() {
     this.activeTrick = new Trick()
     output("Completed trick " + round.size() + "/" + this.tricksPerRound)
     output("Player " + this.playerTurn + " is on the lead.")
-
     if(round.size() == this.tricksPerRound) {
-      //End of round
-      for(var i = 0; i < this.numPlayers; i++) {
-        this.score[i] += round.playerPoints[i]
+      var didMoon = this.rounds[this.rounds.length - 1].moonPlayer()
+      if(didMoon >= 0) {
+        this.onMoon(didMoon)
+      } else {
+        this.endRound()
       }
-      if(this.onRoundEnd){
-        this.onRoundEnd()
-      }
-      this.newRound()
     }
   }
 
@@ -482,12 +498,7 @@ function Game() {
     if(this.activeTrick.completed()) {
       var round = this.currentRound()
       round.addTrick(this.activeTrick)
-      var didMoon = this.rounds[this.rounds.length - 1].moonPlayer()
-      if(didMoon >= 0) {
-        this.onMoon(didMoon)
-      } else {
-        this.finishTrick()
-      }
+      this.finishTrick()
     }
 
     this.currentTurn()
