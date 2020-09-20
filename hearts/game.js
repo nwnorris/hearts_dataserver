@@ -203,6 +203,7 @@ function Game() {
   this.roundPlayedCards = new Map()
   this.debugMoon = false
   this.tricksPerRound = 13
+  this.maxScore = 15
   if(this.debugMoon) {
     this.passType = 2
   }
@@ -224,7 +225,7 @@ function Game() {
 
   this.log = function(msg) {
     if(output != null) {
-      output(msg)
+      this.output(msg)
     }
   }
   this.mode = 'pregame'
@@ -248,7 +249,7 @@ function Game() {
   }
 
   this.currentTurn = function() {
-    output("It is player " + this.playerTurn + "'s turn.")
+    this.output("It is player " + this.playerTurn + "'s turn.")
   }
 
   this.deal = function() {
@@ -297,10 +298,11 @@ function Game() {
   //Once all players have passed their cards, we actually perform the pass
   this.executePass = function() {
     for(var i = 0; i < this.players.length; i++) {
-      var pidTarget = this.getPassTarget(i)
-      var cards = this.passedCards[i]
+      var id = this.players[i].id
+      var pidTarget = this.getPassTarget(id)
+      var cards = this.passedCards[id]
       for(var j = 0; j < cards.length; j++) {
-        this.players[i].remove(cards[j])
+        this.players[id].remove(cards[j])
         this.players[pidTarget].hand.addCard(cards[j])
       }
     }
@@ -379,7 +381,7 @@ function Game() {
   }
 
   this.registerOutput = function(callback) {
-    output = callback
+    this.output = callback
   }
 
   this.status = function() {
@@ -404,7 +406,7 @@ function Game() {
       var id = this.players.length
       var player = new Player(id, playerName)
       this.players.push(player)
-      output("Player joined: " + player.name)
+      this.output("Player joined: " + player.name)
       success = true
       if(this.players.length == 4) {
         this.start()
@@ -415,7 +417,7 @@ function Game() {
   }
 
   this.start = function() {
-    output("Game is beginning!")
+    this.output("Game is beginning!")
     this.newRound();
   }
 
@@ -446,16 +448,52 @@ function Game() {
     }
   }
 
+  this.endGame = function() {
+    //Winner is player with lowest score
+    console.log("Attempting to end the game.")
+    var tempThis = this
+    this.players.sort(function(a, b) {
+      var aScore = tempThis.score[a.id]
+      var bScore = tempThis.score[b.id]
+      if(aScore < bScore) {
+        return -1
+      } else if(aScore > bScore) {
+        return 1
+      }
+      return 0
+    })
+
+    output = []
+    this.players.forEach(function(p) {
+      output.push([p.id, tempThis.score[p.id]])
+    })
+    this.finalScore = output
+
+    if(this.onGameEnd){
+      this.onGameEnd()
+    }
+  }
+
   this.endRound = function() {
     //Add points and call hook function
     var round = this.activeRound()
+    var gameOver = false
     for(var i = 0; i < this.numPlayers; i++) {
       this.score[i] += round.playerPoints[i]
+      if(this.score[i] >= this.maxScore) {
+        gameOver = true
+      }
     }
+
     if(this.onRoundEnd){
       this.onRoundEnd()
     }
-    this.newRound()
+
+    if(gameOver) {
+      this.endGame()
+    } else {
+      this.newRound()
+    }
   }
 
   this.finishTrick = function() {
@@ -463,8 +501,8 @@ function Game() {
     this.onCompleteTrick(this.activeTrick.winner.player)
     this.playerTurn = this.activeTrick.winner.player
     this.activeTrick = new Trick()
-    output("Completed trick " + round.size() + "/" + this.tricksPerRound)
-    output("Player " + this.playerTurn + " is on the lead.")
+    this.output("Completed trick " + round.size() + "/" + this.tricksPerRound)
+    this.output("Player " + this.playerTurn + " is on the lead.")
     if(round.size() == this.tricksPerRound) {
       var didMoon = this.rounds[this.rounds.length - 1].moonPlayer()
       if(didMoon >= 0) {
@@ -484,7 +522,7 @@ function Game() {
   }
 
   this.playCard = function(card) {
-    output(this.playerTurn + " plays " + card)
+    this.output(this.playerTurn + " plays " + card)
     this.writeAction(card.num)
     console.log(this.playerTurn + " plays " + card)
 

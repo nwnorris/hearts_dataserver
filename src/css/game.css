@@ -204,3 +204,40 @@ body {
   align-content: center;
   margin-left: 15px;
 }
+
+.endgame {
+  position: fixed;
+  z-index: 10;
+  width: 50vw;
+  height: 80vh;
+  top: 10vh;
+  left: 25vw;
+  border: 1px solid #ccc;
+  drop-shadow: 0 0 15px #ccc;
+  display: flex;
+  justify-content: space-around;
+  flex-direction: column;
+  display: none;
+
+}
+
+.endgame h1 {
+  width: 100%;
+  text-align: center;
+}
+
+.endgame ul {
+  width: 100%;
+  margin: auto;
+  list-style-type: none;
+  padding-left: 0;
+  font-size: 1.8em;
+}
+
+.endgame ul li {
+  padding-left: 25px;
+  padding-right: 25px;
+  padding-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+}

@@ -14,6 +14,7 @@ var hasSelected = false
 var currentMode = undefined;
 var ch = 0
 var cw = 0
+var debugAI = true
 
 var SERVER_URL = "http://hearts.nnorris.com"
 //var SERVER_URL = "http://localhost:5000"
@@ -206,6 +207,10 @@ function updateCards() {
 		})
 	}
 
+	if(myTurn && debugAI) {
+		var choice = $(".enabled")[0]
+		playCard(choice)
+	}
 }
 
 function update(local = false) {
@@ -256,7 +261,6 @@ socket.on('update', (msg) => {
 socket.on('turn', (msg) => {
 	var player = msg.pid
 	var leadSuit = (msg.leadSuit == undefined) ? -1 : msg.leadSuit
-	console.log("TURN: " + player + " (I am " + pnum + "), lead: " + leadSuit)
 	updateTurn(player)
 })
 
@@ -278,7 +282,6 @@ socket.on('score-update', (msg) => {
 })
 
 socket.on('get-pass', (msg) => {
-	console.log(msg)
 	passTarget = msg.targets[pnum]
 	cardsToPass = []
 	$(".pass_header").find("p").text("You are passing to: " + playerNames[passTarget])
@@ -287,10 +290,20 @@ socket.on('get-pass', (msg) => {
 })
 
 socket.on('moon', (msg) => {
-	console.log(msg)
 	if(msg.pid == pnum) {
 		updateState({mode: 'moon'})
 	}
+})
+
+socket.on('game-end', (msg) => {
+	console.log(msg)
+	//Scores should already be sorted
+	msg.score.forEach(function(info, index) {
+		$("#name_p" + index).text(playerNames[info[0]])
+		$("#score_p" + index).text(info[1])
+	})
+
+	updateState({mode : 'endgame'})
 })
 
 // -- END SOCKET -- //
@@ -352,6 +365,17 @@ function moon(gameState) {
 	$(".moon_container").fadeIn()
 }
 
+function endGame(gameState) {
+	console.log("Mode: endgame")
+	$("#pid_text").fadeOut();
+	$(".card_container").fadeOut()
+	$(".score").fadeOut()
+	$(".pass_container").fadeOut()
+	$(".moon_container").fadeOut()
+	$(".turn").css("display", "none")
+	$(".endgame").fadeIn()
+}
+
 function updateState(gameState) {
 	currentMode = gameState.mode
 	if(gameState.players) {
@@ -374,8 +398,8 @@ function updateState(gameState) {
 		ingame(gameState)
 	} else if(currentMode == "moon") {
 		moon(gameState)
-	} else if(currentMode == "postgame") {
-
+	} else if(currentMode == "endgame") {
+		endGame(gameState)
 	}
 }
 

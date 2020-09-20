@@ -103,7 +103,13 @@ var donePassing = function() {
   io.emit("recieve-pass", {'cards': cards})
   setTimeout(function() {
     activeGame.beginRound()
-  }, 2000)
+  }, 500)
+}
+
+var onGameEnd = function() {
+  console.log("Showing end game!")
+  var score = activeGame.finalScore
+  io.emit("game-end", {'score' : score})
 }
 
 function newGame() {
@@ -115,6 +121,7 @@ function newGame() {
   activeGame.getPass = getPass
   activeGame.donePassing = donePassing
   activeGame.onMoon = didMoon
+  activeGame.onGameEnd = onGameEnd
   activeGame.currentTurn()
 }
 
