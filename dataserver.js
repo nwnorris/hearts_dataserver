@@ -70,7 +70,6 @@ var onStart = function() {
 
 var onRoundEnd = function() {
   sendScore()
-  onStart()
 }
 
 var trickDone = function(winner) {
@@ -81,7 +80,6 @@ var trickDone = function(winner) {
 
 var getPass = function() {
   sendUpdate()
-  sendScore()
   targets = []
   for(var i = 0; i < 4; i++) {
     targets.push(activeGame.getPassTarget(i))
@@ -89,7 +87,6 @@ var getPass = function() {
   setTimeout(function() {
     io.emit("get-pass", {'targets' : targets})
   }, 500)
-
 }
 
 var didMoon = function(pid) {
