@@ -50,6 +50,7 @@ function Game() {
   this.onRoundEnd = null
   this.donePassing = null
   this.onMoon = null
+  this.onBeginGame = null
 
   //Caches for incremental logging to CSV
   this.writeCache = []
@@ -250,6 +251,7 @@ function Game() {
 
   this.start = function() {
     this.output("Game is beginning!")
+    this.onBeginGame();
     this.newRound();
   }
 

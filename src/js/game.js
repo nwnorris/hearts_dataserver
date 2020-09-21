@@ -282,6 +282,7 @@ socket.on('score-update', (msg) => {
 })
 
 socket.on('get-pass', (msg) => {
+	update()
 	passTarget = msg.targets[pnum]
 	cardsToPass = []
 	$(".pass_header").find("p").text("You are passing to: " + playerNames[passTarget])

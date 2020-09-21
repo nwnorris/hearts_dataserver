@@ -79,7 +79,7 @@ var trickDone = function(winner) {
 }
 
 var getPass = function() {
-  sendUpdate()
+  //sendUpdate()
   targets = []
   for(var i = 0; i < 4; i++) {
     targets.push(activeGame.getPassTarget(i))
@@ -109,6 +109,10 @@ var onGameEnd = function() {
   io.emit("game-end", {'score' : score})
 }
 
+var onBeginGame = function() {
+  sendScore()
+}
+
 function newGame() {
   activeGame = new game.Game()
   activeGame.registerOutput(sendLogMsg)
@@ -119,6 +123,7 @@ function newGame() {
   activeGame.donePassing = donePassing
   activeGame.onMoon = didMoon
   activeGame.onGameEnd = onGameEnd
+  activeGame.onBeginGame = onBeginGame
   activeGame.currentTurn()
 }
 
