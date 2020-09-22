@@ -8,6 +8,7 @@ var http = require('http').createServer(app)
 var port = 5000
 var io = require('socket.io')(http)
 var mobile = require('is-mobile')
+var Agent = require("./Agent")
 
 app.use(bp.urlencoded({extended: true}))
 app.use(bp.json())
@@ -18,6 +19,7 @@ var game = require('./hearts/game.js')
 var players = []
 var sessions = new Map()
 var activeGame = null
+var ai = Agent(null, null)
 
 var host = JSON.parse(fs.readFileSync('./config.json', {encoding: 'utf8', flag: 'r'})).host
 
@@ -38,7 +40,11 @@ function playCard(player, cardNum) {
 }
 
 function sendTurn() {
-  io.emit("turn", {pid: activeGame.playerTurn, leadSuit: activeGame.activeTrick.leadSuit})
+  var msg = {pid: activeGame.playerTurn, leadSuit: activeGame.activeTrick.leadSuit}
+  io.emit("turn", msg)
+  if(ai) {
+    ai.alertTurn(msg)
+  }
 }
 
 function sendScore() {
@@ -58,6 +64,9 @@ function startGame() {
 
 function sendUpdate() {
   io.emit("update", "")
+  if(ai != null) {
+    ai.update()
+  }
 }
 
 var onStart = function() {
@@ -86,6 +95,9 @@ var getPass = function() {
   }
   setTimeout(function() {
     io.emit("get-pass", {'targets' : targets})
+    if(ai != null) {
+      ai.getPass()
+    }
   }, 500)
 }
 
@@ -190,6 +202,11 @@ app.post("/game/player", function(req, res) {
   var pid = activeGame.players.length - 1
   var session = newSession()
   res.status(200).json({valid: success, player: req.body.pid, pid: pid, session: session})
+
+  if(activeGame.players.length == 3) {
+    ai = new Agent(3, activeGame)
+    activeGame.addPlayer('Artian')
+  }
 })
 
 app.post("/game/player/hand", function(req, res) {

@@ -35,7 +35,7 @@ function Game() {
   this.numPlayers = 4
   this.passedCards = new Map()
   this.roundPlayedCards = new Map()
-  this.debugMoon = false
+  this.debugMoon = true
   this.tricksPerRound = 13
   this.maxScore = 100
   if(this.debugMoon) {
@@ -473,11 +473,15 @@ function Game() {
 
   this.writeAction = function(cardNum) {
     var row = []
+    var cardIndex = -1
     var player = this.players[this.playerTurn]
     //Columns 0 thru 12, the player's hand
     for (var i = 0; i < 13; i++) {
       if(i < player.hand.cards.length) {
         row.push(player.hand.cards[i].num)
+        if(player.hand.cand.cards[i].num == cardNum) {
+          cardIndex = i
+        }
       } else {
         row.push(-1)
       }
@@ -502,7 +506,7 @@ function Game() {
 
     //Player score and card played
     row.push(this.score[this.playerTurn])
-    row.push(cardNum)
+    row.push(cardIndex)
 
     out = row.join(',')
     this.writeCache.push(out)
