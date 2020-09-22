@@ -479,7 +479,7 @@ function Game() {
     for (var i = 0; i < 13; i++) {
       if(i < player.hand.cards.length) {
         row.push(player.hand.cards[i].num)
-        if(player.hand.cand.cards[i].num == cardNum) {
+        if(player.hand.cards[i].num == cardNum) {
           cardIndex = i
         }
       } else {

@@ -204,7 +204,7 @@ app.post("/game/player", function(req, res) {
   res.status(200).json({valid: success, player: req.body.pid, pid: pid, session: session})
 
   if(activeGame.players.length == 3) {
-    ai = new Agent(3, activeGame)
+    ai = new Agent(3, activeGame, playCard)
     activeGame.addPlayer('Artian')
   }
 })
