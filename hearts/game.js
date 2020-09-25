@@ -162,16 +162,19 @@ function Game() {
     }
   }
 
+  this.findTwoClubs = function() {
+    for(var i = 0; i < this.players.length; i++) {
+      if(this.players[i].hand.contains(0)) { // 2 of clubs
+        console.log("Player " + i + " has the 2 of clubs.")
+        return i
+      }
+    }
+  }
+
   this.beginRound = function() {
     //Find 2 of clubs
     this.mode = 'ingame';
-    for(var i = 0; i < this.players.length; i++) {
-      if(this.players[i].hand.contains(0)) { // 2 of clubs
-        this.playerTurn = i
-        console.log("Player " + i + " has the 2 of clubs.")
-        break
-      }
-    }
+    this.playerTurn = this.findTwoClubs()
     this.currentTurn()
     this.onStart()
 
@@ -203,6 +206,7 @@ function Game() {
       this.testMoon()
     }
     this.passType = (this.passType + 1) % 4
+    this.findTwoClubs()
     if(this.passType == 3) {
       //Skip pass phase, no pass.
       this.beginRound()

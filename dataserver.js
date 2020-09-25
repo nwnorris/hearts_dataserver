@@ -206,11 +206,11 @@ app.post("/game/player", function(req, res) {
   var session = newSession()
   res.status(200).json({valid: success, player: req.body.pid, pid: pid, session: session})
 
-  if(activeGame.players.length == 1) {
-    addAI()
-    addAI()
-    addAI()
-  }
+  // if(activeGame.players.length == 1) {
+  //   addAI()
+  //   addAI()
+  //   addAI()
+  // }
 })
 
 app.post("/game/player/hand", function(req, res) {
