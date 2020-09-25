@@ -19,10 +19,10 @@ var game = require('./hearts/game.js')
 var players = []
 var sessions = new Map()
 var activeGame = null
-var ai = Agent(null, null)
+agents = []
 
 var host = JSON.parse(fs.readFileSync('./config.json', {encoding: 'utf8', flag: 'r'})).host
-
+var agentNames = ["Artian", "Treshmek", "Pulrus", "Sugnam", "Xarviel", "Guhe", "Ornist"]
 function sendLogMsg(msg) {
   io.emit('game-message', msg);
 }
@@ -42,9 +42,9 @@ function playCard(player, cardNum) {
 function sendTurn() {
   var msg = {pid: activeGame.playerTurn, leadSuit: activeGame.activeTrick.leadSuit}
   io.emit("turn", msg)
-  if(ai) {
-    ai.alertTurn(msg)
-  }
+  agents.forEach(function(a) {
+    a.alertTurn(msg)
+  })
 }
 
 function sendScore() {
@@ -64,9 +64,10 @@ function startGame() {
 
 function sendUpdate() {
   io.emit("update", "")
-  if(ai != null) {
-    ai.update()
-  }
+  agents.forEach(function(a) {
+    a.update()
+  })
+
 }
 
 var onStart = function() {
@@ -95,9 +96,9 @@ var getPass = function() {
   }
   setTimeout(function() {
     io.emit("get-pass", {'targets' : targets})
-    if(ai != null) {
-      ai.getPass()
-    }
+    agents.forEach(function(a) {
+      a.getPass()
+    })
   }, 500)
 }
 
@@ -152,14 +153,16 @@ function newSession() {
   return session
 }
 
+function addAI() {
+  var a = new Agent(activeGame.players.length, activeGame, playCard)
+  var name = agentNames[Math.floor(Math.random() * agentNames.length)]
+  activeGame.addPlayer(name)
+  agents.push(a)
+}
+
 //--ROUTES--//
 app.get("/", function(req, res) {
   res.render('game.ejs', {host: host})
-  // if(mobile(req)) {
-  //   res.render('game.ejs', {host: host})
-  // } else {
-  //   res.redirect("/game")
-  // }
 })
 
 app.post("/game/new", function(req, res) {
@@ -203,9 +206,10 @@ app.post("/game/player", function(req, res) {
   var session = newSession()
   res.status(200).json({valid: success, player: req.body.pid, pid: pid, session: session})
 
-  if(activeGame.players.length == 3) {
-    ai = new Agent(3, activeGame, playCard)
-    activeGame.addPlayer('Artian')
+  if(activeGame.players.length == 1) {
+    addAI()
+    addAI()
+    addAI()
   }
 })
 

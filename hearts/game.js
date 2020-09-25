@@ -35,12 +35,13 @@ function Game() {
   this.numPlayers = 4
   this.passedCards = new Map()
   this.roundPlayedCards = new Map()
-  this.debugMoon = true
+  this.debugMoon = false
   this.tricksPerRound = 13
   this.maxScore = 100
   if(this.debugMoon) {
     this.passType = 2
   }
+  this.passType = 2
 
   //Null values are functions that must be registered by the software using this API
   this.output = null
@@ -473,15 +474,11 @@ function Game() {
 
   this.writeAction = function(cardNum) {
     var row = []
-    var cardIndex = -1
     var player = this.players[this.playerTurn]
     //Columns 0 thru 12, the player's hand
     for (var i = 0; i < 13; i++) {
       if(i < player.hand.cards.length) {
         row.push(player.hand.cards[i].num)
-        if(player.hand.cards[i].num == cardNum) {
-          cardIndex = i
-        }
       } else {
         row.push(-1)
       }
@@ -506,7 +503,7 @@ function Game() {
 
     //Player score and card played
     row.push(this.score[this.playerTurn])
-    row.push(cardIndex)
+    row.push(cardNum)
 
     out = row.join(',')
     this.writeCache.push(out)

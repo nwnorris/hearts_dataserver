@@ -6,6 +6,8 @@ function Agent(pid, game, playCard) {
 
   this.alertTurn = function(msg) {
     if(msg.pid == this.pid) {
+      //this.hand = this.game.getPlayableCards(this.pid)
+      this.update()
       this.getMove()
     }
   }
@@ -39,8 +41,8 @@ function Agent(pid, game, playCard) {
     for (var i = 0; i < 3; i++) {
       if(i < this.game.activeTrick.playedCards.length) {
         var play = this.game.activeTrick.playedCards[i]
-        row.push(play.card.num)
-        row.push(this.game.score[play.player])
+        row.push(parseInt(play.card.num))
+        row.push(parseInt(this.game.score[play.player]))
       } else {
         row.push(-1)
         row.push(-1)
@@ -49,11 +51,11 @@ function Agent(pid, game, playCard) {
 
     //Current suit counts
     for (var i = 0; i < 4; i++) {
-      row.push(this.game.rounds[this.game.rounds.length - 1].cardCounts[i])
+      row.push(parseInt(this.game.rounds[this.game.rounds.length - 1].cardCounts[i]))
     }
 
     //Player score and card played
-    row.push(this.game.score[this.pid])
+    row.push(parseInt(this.game.score[this.pid]))
 
     this.calculateMove(row)
   }
@@ -61,12 +63,18 @@ function Agent(pid, game, playCard) {
   this.calculateMove = function(x) {
     const { spawn } = require('child_process')
     console.log(JSON.stringify(x))
-    const pyProg = spawn('python3', ['./model/get_move.py', JSON.stringify(x)], );
+    const pyProg = spawn('python', ['./model/get_move.py', JSON.stringify(x)], );
     var tmpThis = this
     pyProg.stdout.on('data', function(data) {
         var indexToPlay = parseInt(data) //Neural net response: what index card should I select?
+
+        //If bad response, clamp to closest card.
+        if(indexToPlay >= tmpThis.hand.length) {
+          indexToPlay = tmpThis.hand.length - 1
+        }
         var card = tmpThis.hand[indexToPlay]
         tmpThis.playCard(tmpThis.pid, card.num)
+
     });
 
     pyProg.stderr.on('data', function(data) {
