@@ -14,7 +14,10 @@ var hasSelected = false
 var currentMode = undefined;
 var ch = 0
 var cw = 0
-var debugAI = true
+var debugAI = false
+var dragging = false
+var selectedCard = undefined;
+var dragOffset = {x: 0, y: 0}
 
 var SERVER_URL = "http://hearts.nnorris.com"
 //var SERVER_URL = "http://localhost:5000"
@@ -131,8 +134,37 @@ function conditionalSelect() {
 			$(this).addClass("selected")
 		}
 	}
-
 }
+
+function isInPlayArea(e) {
+	var playX = $(window).width() / 3
+	var playY = $(window).height() / 4
+	var validX  = e.pageX > ($(window).width() / 2 - (playX / 2))
+	var validY = e.pageY < playY
+	if(validX && validY) {
+		return true
+	}
+	return false
+}
+$(".card_container").mouseup(function(e){
+	var card = $("#" + selectedCard)
+	if(dragging && isInPlayArea(e)) {
+		playCard(card)
+	} else {
+		card.css("top", "")
+		card.css("left", "")
+		setTimeout(function() {
+			$(".selected").removeClass("selected")
+		}, 35)
+
+		layoutCards()
+	}
+
+	dragging = false
+	dragOffset.x = 0
+	dragOffset.y = 0
+	selectedCard = undefined
+})
 
 function addCard(cardId) {
 	var card = $('<div class="card" id="' + cardId + '"></div>"')
@@ -141,6 +173,25 @@ function addCard(cardId) {
 	card.css("width", cw + "px")
 	card.css("height", ch + "px")
 	card.click(conditionalSelect)
+	card.mousedown(function(e) {
+		dragging = false;
+		thisPos = $(this).position()
+		console.log(thisPos)
+		dragOffset.x = e.pageX - thisPos.left
+		dragOffset.y = e.pageY - thisPos.top
+		selectedCard = $(this).attr('id')
+	}).mousemove(function(e) {
+		if(selectedCard == $(this).attr('id')){
+			dragging = true;
+			x = e.pageX - dragOffset.x
+			y = e.pageY - dragOffset.y
+			console.log(x, y)
+			$(this).css("bottom", "")
+			$(this).css("left", x + "px")
+			$(this).css("top", y + "px")
+		}
+
+	})
 	$(".card_container").append(card)
 }
 
