@@ -41,7 +41,6 @@ function Game() {
   if(this.debugMoon) {
     this.passType = 2
   }
-  this.passType = 2
 
   //Null values are functions that must be registered by the software using this API
   this.output = null
