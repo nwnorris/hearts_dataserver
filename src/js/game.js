@@ -146,25 +146,25 @@ function isInPlayArea(e) {
 	}
 	return false
 }
-$(".card_container").mouseup(function(e){
-	var card = $("#" + selectedCard)
-	if(dragging && isInPlayArea(e)) {
-		playCard(card)
-	} else {
-		card.css("top", "")
-		card.css("left", "")
-		setTimeout(function() {
-			$(".selected").removeClass("selected")
-		}, 35)
-
-		layoutCards()
-	}
-
-	dragging = false
-	dragOffset.x = 0
-	dragOffset.y = 0
-	selectedCard = undefined
-})
+// $(".card_container").mouseup(function(e){
+// 	var card = $("#" + selectedCard)
+// 	if(dragging && isInPlayArea(e)) {
+// 		playCard(card)
+// 	} else {
+// 		card.css("top", "")
+// 		card.css("left", "")
+// 		setTimeout(function() {
+// 			$(".selected").removeClass("selected")
+// 		}, 35)
+//
+// 		layoutCards()
+// 	}
+//
+// 	dragging = false
+// 	dragOffset.x = 0
+// 	dragOffset.y = 0
+// 	selectedCard = undefined
+// })
 
 function addCard(cardId) {
 	var card = $('<div class="card" id="' + cardId + '"></div>"')
@@ -173,25 +173,25 @@ function addCard(cardId) {
 	card.css("width", cw + "px")
 	card.css("height", ch + "px")
 	card.click(conditionalSelect)
-	card.mousedown(function(e) {
-		dragging = false;
-		thisPos = $(this).position()
-		console.log(thisPos)
-		dragOffset.x = e.pageX - thisPos.left
-		dragOffset.y = e.pageY - thisPos.top
-		selectedCard = $(this).attr('id')
-	}).mousemove(function(e) {
-		if(selectedCard == $(this).attr('id')){
-			dragging = true;
-			x = e.pageX - dragOffset.x
-			y = e.pageY - dragOffset.y
-			console.log(x, y)
-			$(this).css("bottom", "")
-			$(this).css("left", x + "px")
-			$(this).css("top", y + "px")
-		}
-
-	})
+	// card.mousedown(function(e) {
+	// 	dragging = false;
+	// 	thisPos = $(this).position()
+	// 	console.log(thisPos)
+	// 	dragOffset.x = e.pageX - thisPos.left
+	// 	dragOffset.y = e.pageY - thisPos.top
+	// 	selectedCard = $(this).attr('id')
+	// }).mousemove(function(e) {
+	// 	if(selectedCard == $(this).attr('id')){
+	// 		dragging = true;
+	// 		x = e.pageX - dragOffset.x
+	// 		y = e.pageY - dragOffset.y
+	// 		console.log(x, y)
+	// 		$(this).css("bottom", "")
+	// 		$(this).css("left", x + "px")
+	// 		$(this).css("top", y + "px")
+	// 	}
+	//
+	// })
 	$(".card_container").append(card)
 }
 
