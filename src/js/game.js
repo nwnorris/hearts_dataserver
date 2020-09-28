@@ -18,6 +18,7 @@ var debugAI = false
 var dragging = false
 var selectedCard = undefined;
 var dragOffset = {x: 0, y: 0}
+var autoPlay = false
 
 var SERVER_URL = "http://hearts.nnorris.com"
 //var SERVER_URL = "http://localhost:5000"
@@ -44,7 +45,7 @@ function playCard(card) {
 		},
 		success: function(res) {
 			animateOut(card, pnum)
-			layoutCards()
+			setTimeout(layoutCards, 1000)
 		}
 	});
 }
@@ -136,6 +137,11 @@ function conditionalSelect() {
 	}
 }
 
+function autoPlayCard() {
+	var card = $($(".enabled")[0])
+	playCard(card)
+}
+
 function isInPlayArea(e) {
 	var playX = $(window).width() / 3
 	var playY = $(window).height() / 4
@@ -209,7 +215,7 @@ function layoutCards() {
 	var width = $(".card_container").width() * 0.9
 	var padding = $(".card_container").width() * 0.1
 
-	ch = $(".card_container").height() * 0.5
+	ch = $(".card_container").height() * 0.6
 	cw = ch / 1.523 // Card size ratio
 
 	$(".card").css("width", cw + "px")
@@ -295,10 +301,14 @@ function collectTrick(trick, pnum) {
 function updateTurn(pid) {
 	if(pid == pnum && currentMode == 'ingame') {
 		myTurn = true
-		$(".turn").css("color", "red")
+		$(".card_container").addClass("show-turn")
+		if(autoPlay) {
+			setTimeout(autoPlayCard, 150)
+		}
+
 	} else {
 		myTurn = false
-		$(".turn").css("color", "white")
+		$(".card_container").removeClass("show-turn")
 	}
 	updateCards()
 }
@@ -318,6 +328,11 @@ socket.on('turn', (msg) => {
 socket.on('trick-complete', (msg) => {
 	var trick = $(".played")
 	collectTrick(trick, msg.winner)
+})
+
+socket.on('round-complete', (msg) => {
+	autoPlay = !autoPlay
+	$(".autoplay_box").toggleClass("autoplay-on")
 })
 
 socket.on('score-update', (msg) => {
@@ -388,6 +403,7 @@ function pregame(gameState) {
 	console.log("Mode: pregame")
 	$("#pid_text").fadeOut();
 	$(".entry_form").fadeIn()
+	$(".autoplay_container").fadeOut()
 	$(".card_container").fadeOut()
 	$(".score").fadeOut()
 	$(".pass_container").fadeOut()
@@ -398,6 +414,7 @@ function pregame(gameState) {
 function ingame(gameState) {
 	console.log("Mode: ingame")
 	$(".turn").fadeIn()
+	$(".autoplay_container").fadeIn()
 	$(".pass_container").fadeOut()
 	$("#pid_text").fadeIn();
 	$(".entry_form").fadeOut()
@@ -415,12 +432,14 @@ function moon(gameState) {
 	$(".card_container").fadeOut()
 	$(".pass_container").fadeOut()
 	$(".moon_container").fadeIn()
+	$(".autoplay_container").fadeOut()
 }
 
 function endGame(gameState) {
 	console.log("Mode: endgame")
 	$("#pid_text").fadeOut();
 	$(".card_container").fadeOut()
+	$(".autoplay_container").fadeOut()
 	$(".score").fadeOut()
 	$(".pass_container").fadeOut()
 	$(".moon_container").fadeOut()
@@ -469,7 +488,6 @@ function clearStorage() {
 	}
 }
 
-
 $(".submit").click(function() {
 	var pid = $("#pid_input").val()
 	player = pid
@@ -495,7 +513,6 @@ $(".submit").click(function() {
 				updateState({mode: "ingame"})
 			}
 		}
-
 	})
 })
 
@@ -534,6 +551,12 @@ function getStatus() {
 
 $(window).resize(function() {
 	layoutCards()
+})
+
+
+$(".autoplay_box").on('click', function() {
+	autoPlay = !autoPlay
+	$(".autoplay_box").toggleClass("autoplay-on")
 })
 
 

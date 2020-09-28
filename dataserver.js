@@ -80,6 +80,7 @@ var onStart = function() {
 
 var onRoundEnd = function() {
   sendScore()
+  io.emit("round-complete", {})
 }
 
 var trickDone = function(winner) {

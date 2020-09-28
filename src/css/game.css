@@ -19,7 +19,7 @@ body {
 
 .entry_form h2 {
   width: 100%;
-  margin-top: 10%;
+  margin-bottom: 10%;
 }
 
 .entry_form input {
@@ -45,7 +45,7 @@ body {
 }
 
 .submit h2 {
-  line-height: 40px;
+  line-height: 80px;
   width: 100%;
   text-align: center;
 }
@@ -58,6 +58,7 @@ body {
   position: fixed;
   width: 50vw;
   height: auto;
+  z-index: 12;
 }
 
 .header h1 {
@@ -109,7 +110,6 @@ body {
   display: none;
   width: 80vw;
   height: 45vh;
-  top: 5vh;
   left: 10vw;
   flex-direction: column;
 }
@@ -129,13 +129,14 @@ body {
 .pass_container_body {
   height: 90%;
   display: flex;
-  justify-content: space-around;
+  justify-content: center;
   align-content: center;
 }
 
 .pass_card {
   height: 100%;
   width: 100px;
+  margin-right: 2vw;
   box-shadow: 0 0 20px #ccc;
   border-radius: 15px;
 }
@@ -145,7 +146,7 @@ body {
   width: 15%;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
 }
 
 .pass_options div {
@@ -154,6 +155,7 @@ body {
   display: flex;
   border-radius: 5px;
   justify-content: center;
+  margin: 5px;
 }
 
 .pass_options p {
@@ -240,4 +242,28 @@ body {
   padding-bottom: 10px;
   display: flex;
   justify-content: space-between;
+}
+
+.autoplay_container {
+  height: 7vh;
+  z-index: 20;
+  width: auto;
+  display: flex;
+  margin-top: 10px;
+  align-items: center;
+  display: none;
+}
+
+.autoplay_box {
+  width: 7vh;
+  height: 7vh;
+  border: 1px solid #ccc;
+  border-radius: 50%;
+  box-shadow: 0 0 5px #ccc;
+  margin-right: 1vw;
+}
+
+.autoplay-on {
+  border: 1px solid #81d494;
+  box-shadow: inset 0 0 5px #81d494;
 }
