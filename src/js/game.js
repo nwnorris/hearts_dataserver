@@ -138,8 +138,8 @@ function conditionalSelect() {
 }
 
 function autoPlayCard() {
-	var card = $($(".enabled")[0])
-	playCard(card)
+	//var card = $($(".enabled")[0])
+	//playCard(card)
 }
 
 function isInPlayArea(e) {
@@ -332,7 +332,7 @@ socket.on('trick-complete', (msg) => {
 
 socket.on('round-complete', (msg) => {
 	autoPlay = !autoPlay
-	$(".autoplay_box").toggleClass("autoplay-on")
+	$(".autoplay_box").removeClass("autoplay-on")
 })
 
 socket.on('score-update', (msg) => {
